@@ -1,0 +1,31 @@
+# ===== DEVELOPMENT OVERRIDE CONFIG =====
+# Chạy: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+
+    environment:
+      NODE_ENV: development
+      DEBUG: "cinema-booking:*"
+
+    ports:
+      - "5000:5000"
+      - "9229:9229"  # Node debugger
+
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+
+    command: npm run dev
+
+  mysql:
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cinema_booking
+      MYSQL_USER: cbs
+      MYSQL_PASSWORD: cbs_password

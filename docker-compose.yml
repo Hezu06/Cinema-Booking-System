@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: cbs-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cinema_booking
+      MYSQL_USER: cbs
+      MYSQL_PASSWORD: cbs_password
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - cbs-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cbs-app
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://cbs:cbs_password@mysql:3306/cinema_booking
+      PORT: 5000
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - cbs-network
+
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  mysql_data:
+
+networks:
+  cbs-network:
+    driver: bridge
