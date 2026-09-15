@@ -1,61 +1,98 @@
-# Build stage
+# ===== BUILD STAGE =====
+# Sử dụng Node.js 22 trên Alpine Linux (kích thước nhỏ)
 FROM node:22-alpine AS builder
 
+# Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+# ===== CÀI ĐẶT CÁC CÔNG CỤ CẦN THIẾT =====
+RUN apk add --no-cache \
+	python3 \
+	make \
+	g++ \
+	gcc \
+	git
+
+# ===== COPY CÁC FILE CẤU HÌNH =====
+COPY package.json package-lock.json ./
+COPY tsconfig.json tsconfig.prisma.json ./
 COPY prisma ./prisma
+COPY .env.example .env
 
-# Install dependencies
-RUN npm ci
+# ===== CÀI ĐẶT NPM DEPENDENCIES =====
+# Cài đặt tất cả dependencies (dev + production)
+RUN npm ci --verbose
 
-# Copy application source
+# ===== COPY SOURCE CODE =====
 COPY src ./src
 
-# Generate Prisma client
+# ===== GENERATE PRISMA CLIENT =====
+# Tạo Prisma Client từ schema
 RUN npm run prisma:generate
 
-# Build TypeScript
+# ===== BUILD TYPESCRIPT =====
+# Biên dịch TypeScript thành JavaScript
 RUN npm run build
 
-# Production stage
+# ===== PRODUCTION STAGE =====
+# Sử dụng image tối thiểu cho production
 FROM node:22-alpine
 
+# Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# ===== CÀI ĐẶT RUNTIME DEPENDENCIES =====
+RUN apk add --no-cache \
+	# Dumb-init: Xử lý signals đúng cách khi container shutdown
+	dumb-init \
+	# Curl: Cho health check
+	curl \
+	# Bash: Cho shell scripting
+	bash
 
-# Copy package files
-COPY package*.json ./
+# ===== COPY PACKAGE FILES =====
+COPY package.json package-lock.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev && \
+# ===== CÀI ĐẶT PRODUCTION DEPENDENCIES =====
+# Chỉ cài production dependencies (không dev)
+RUN npm ci --omit=dev --verbose && \
 	npm cache clean --force
 
-# Copy Prisma schema
+# ===== COPY PRISMA SCHEMA =====
 COPY prisma ./prisma
+COPY .env.example .env
 
-# Copy built application from builder
+# ===== COPY BUILD OUTPUT =====
+# Copy các file đã biên dịch từ builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create non-root user for security
+# ===== COPY ENTRYPOINT SCRIPT =====
+COPY entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
+
+# ===== TẠO NON-ROOT USER =====
+# Tạo user nodejs để chạy app (bảo mật)
 RUN addgroup -g 1001 -S nodejs && \
-	adduser -S nodejs -u 1001
+	adduser -S nodejs -u 1001 && \
+	chown -R nodejs:nodejs /app
 
+# ===== CHUYỂN SANG NON-ROOT USER =====
 USER nodejs
 
-# Expose port (adjust if needed)
+# ===== EXPOSE PORT =====
+# Expose port 5000 cho ứng dụng Express
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-	CMD wget --quiet --tries=1 --spider http://localhost:5000/health || exit 1
+# ===== HEALTH CHECK =====
+# Kiểm tra sức khỏe container mỗi 30 giây
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+	CMD curl --fail http://localhost:5000/health || exit 1
 
-# Use dumb-init to handle signals properly
+# ===== ENTRYPOINT =====
+# Sử dụng dumb-init để xử lý signals đúng cách
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start application
-CMD ["node", "dist/server.js"]
+# ===== START APPLICATION =====
+# Chạy entrypoint script för migrations và khởi động app
+CMD ["bash", "entrypoint.sh"]
