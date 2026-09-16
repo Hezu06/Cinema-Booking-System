@@ -17,7 +17,7 @@ RUN apk add --no-cache \
 COPY package.json package-lock.json ./
 COPY tsconfig.json tsconfig.prisma.json ./
 COPY prisma ./prisma
-COPY .env.example .env
+COPY .env.docker.example .env
 
 # ===== CÀI ĐẶT NPM DEPENDENCIES =====
 # Cài đặt tất cả dependencies (dev + production)
@@ -60,7 +60,7 @@ RUN npm ci --omit=dev --verbose && \
 
 # ===== COPY PRISMA SCHEMA =====
 COPY prisma ./prisma
-COPY .env.example .env
+COPY .env.docker.example .env
 
 # ===== COPY BUILD OUTPUT =====
 # Copy các file đã biên dịch từ builder stage

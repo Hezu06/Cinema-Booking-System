@@ -133,7 +133,9 @@ docker-compose exec app curl http://localhost:5000/health
 
 ## 🔐 Environment Variables
 
-File `.env` được tạo từ `.env.example`:
+Khi chạy npm trực tiếp trên máy, dùng `.env` với `DATABASE_URL` trỏ tới `localhost`.
+Khi chạy Docker Compose, `docker-compose.yml` tự ghi đè `DATABASE_URL` bằng hostname `mysql`.
+File `.env.docker.example` là mẫu dành cho Docker:
 
 ```env
 NODE_ENV=production
