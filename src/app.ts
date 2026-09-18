@@ -1,8 +1,10 @@
-import express, { type Express } from "express";
+import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 
-const app: Express = express();
+import movieRouter from "./api/routes/movie.routes.js";
+
+const app = express()
 
 app.use(helmet());
 app.use(cors());
@@ -14,5 +16,7 @@ app.get("/health", (_req, res) => {
         message: "Cinema Booking System API is running"
     });
 });
+
+app.use('/api/movies', movieRouter)
 
 export default app;
