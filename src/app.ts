@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 
 import movieRouter from "./api/routes/movie.routes.js";
+import authRouter from "./api/routes/auth.routes.js";
 
 const app = express()
 
@@ -18,5 +19,6 @@ app.get("/health", (_req, res) => {
 });
 
 app.use('/api/movies', movieRouter)
+app.use("/api/auth", authRouter);
 
 export default app;
