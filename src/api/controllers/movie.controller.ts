@@ -1,59 +1,112 @@
 import type { Request, Response } from 'express'
 
-const getAllMovies = async (request: Request, response: Response) => {
-  // const movies = await movieService.getAllMovies()
+import { MovieService } from '../../business/services/movie.service.js'
 
-  response.status(200).json({
-    message: 'Get all movies'
-  })
-}
+import {
+  validateCreateMovie,
+  validateUpdateMovie
+} from '../validators/movie.validator.js'
+import type { ReadableStreamDefaultReader } from 'stream/web'
 
-const getMovieById = async (request: Request, response: Response) => {
-  const { id } = request.params
+export class MovieController {
 
-  // const movie = movieService.getMovieById(id)
+  constructor(
+    private readonly movieService: MovieService
+  ) {}
 
-  response.status(200).json({
-    message: `Get movie ${id}`
-  })
-}
+  getAllMovies = async (request: Request, response: Response) => {
+    const movies = await this.movieService.getAllMovies()
 
-const createMovie = async (request: Request, response: Response) => {
-  const movieData = request.body
+    response.status(200).json({
+      message: 'Get all movies',
+    })
+  }
 
-  // const movie = await movieService.createMovie(movieData)
+  getMovieById = async (request: Request<{ id: string }>, response: Response) => {
+    const { id } = request.params
 
-  response.status(201).json({
-    message: 'Movie created',
-    data: movieData
-  })
-}
+    const movie = this.movieService.getMovieById(id)
 
-const updateMovie = async (request: Request, response: Response) => {
-  const { id } = request.params
-  const newMovieData = request.body
+    if (!movie) {
+      response.status(404).json({
+        message: 'Movie not found'
+      })
 
-  // const movie = await movieService.updateMovie(id, newMovieData)
+      return
+    }
 
-  response.status(200).json({
-    id,
-    ...newMovieData
-  })
-}
+    response.status(200).json({
+      message: `Get movie ${id}`
+    })
+  }
 
-const deleteMovie = async (request: Request, response: Response) => {
-  const { id } = request.params
+  createMovie = async (request: Request, response: Response) => {
+    const movieData = request.body
 
-  // await movieService.deleteMovie(id)
+    const errors = validateCreateMovie(movieData)
 
-  response.status(204).send()
-}
+    if (errors.length > 0) {
+      response.status(400).json({
+        message: 'validation failed',
+        errors: errors
+      })
 
-export default {
-  getAllMovies,
-  getMovieById,
-  createMovie,
-  updateMovie,
-  deleteMovie
+      return
+    }
+
+    const movie = await this.movieService.createMovie(movieData)
+
+    response.status(201).json({
+      message: 'Movie created',
+      movie: movie
+    })
+  }
+
+  updateMovie = async (request: Request<{ id: string }>, response: Response) => {
+    const { id } = request.params
+    const newMovieData = request.body
+
+    const errors = validateUpdateMovie(newMovieData)
+
+    if (errors.length > 0) {
+      response.status(400).json({
+        message: 'validation failed',
+        errors: errors
+      })
+    }
+
+    const movie = await this.movieService.updateMovie(id, newMovieData)
+
+    if (!movie) {
+      response.status(404).json({
+        message: 'Movie not found'
+      })
+      return
+    }
+
+    response.status(200).json({
+      message: 'Movie updated',
+      movie: movie
+    })
+  }
+
+  deleteMovie = async (request: Request<{ id: string }>, response: Response) => {
+    const { id } = request.params
+
+    const deletedMovied = await this.movieService.deleteMovie(id)
+
+    if (!deletedMovied) {
+      response.status(404).json({
+        message: 'Movie not found'
+      })
+
+      return
+    }
+
+    response.status(204).json({
+      message: 'Movie deleted successfully',
+      movie: deletedMovied
+    })
+  }
 }
 
