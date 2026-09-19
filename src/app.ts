@@ -1,10 +1,11 @@
-import express, { type Express } from "express";
+import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 
+import movieRouter from "./api/routes/movie.routes.js";
 import authRouter from "./api/routes/auth.routes.js";
 
-const app: Express = express();
+const app = express()
 
 app.use(helmet());
 app.use(cors());
@@ -17,6 +18,7 @@ app.get("/health", (_req, res) => {
     });
 });
 
+app.use('/api/movies', movieRouter)
 app.use("/api/auth", authRouter);
 
 export default app;
