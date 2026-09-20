@@ -1,5 +1,5 @@
-import { 
-  type Movie,
+import type { 
+  Movie,
   MovieStatus 
 } from '../models/movie.model.js'
 

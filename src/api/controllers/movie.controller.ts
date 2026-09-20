@@ -6,7 +6,6 @@ import {
   validateCreateMovie,
   validateUpdateMovie
 } from '../validators/movie.validator.js'
-import type { ReadableStreamDefaultReader } from 'stream/web'
 
 export class MovieController {
 
@@ -14,18 +13,19 @@ export class MovieController {
     private readonly movieService: MovieService
   ) {}
 
-  getAllMovies = async (request: Request, response: Response) => {
+  getAllMovies = async (_request: Request, response: Response) => {
     const movies = await this.movieService.getAllMovies()
 
     response.status(200).json({
       message: 'Get all movies',
+      data: movies
     })
   }
 
   getMovieById = async (request: Request<{ id: string }>, response: Response) => {
     const { id } = request.params
 
-    const movie = this.movieService.getMovieById(id)
+    const movie = await this.movieService.getMovieById(id)
 
     if (!movie) {
       response.status(404).json({
@@ -36,7 +36,8 @@ export class MovieController {
     }
 
     response.status(200).json({
-      message: `Get movie ${id}`
+      message: `Get movie ${id}`,
+      data: movie
     })
   }
 
@@ -73,6 +74,8 @@ export class MovieController {
         message: 'validation failed',
         errors: errors
       })
+
+      return
     }
 
     const movie = await this.movieService.updateMovie(id, newMovieData)
@@ -93,9 +96,9 @@ export class MovieController {
   deleteMovie = async (request: Request<{ id: string }>, response: Response) => {
     const { id } = request.params
 
-    const deletedMovied = await this.movieService.deleteMovie(id)
+    const deletedMovie = await this.movieService.deleteMovie(id)
 
-    if (!deletedMovied) {
+    if (!deletedMovie) {
       response.status(404).json({
         message: 'Movie not found'
       })
@@ -103,9 +106,9 @@ export class MovieController {
       return
     }
 
-    response.status(204).json({
+    response.status(200).json({
       message: 'Movie deleted successfully',
-      movie: deletedMovied
+      movie: deletedMovie
     })
   }
 }

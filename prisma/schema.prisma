@@ -33,3 +33,20 @@ enum UserStatus {
   INACTIVE
   BANNED
 }
+
+model Movie {
+  id              String      @id @default(uuid())
+  title           String
+  description     String      @db.Text
+  durationMinutes Int
+  genre           String
+  releaseDate     DateTime
+  posterUrl       String
+  status          MovieStatus @default(COMING_SOON)
+}
+
+enum MovieStatus {
+  COMING_SOON
+  NOW_SHOWING
+  ENDED
+}

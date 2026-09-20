@@ -32,9 +32,14 @@ export class MovieService {
 
   async updateMovie(
     id: string,
-    data: CreateMovieData
+    data: UpdateMovieData
   ) {
-    return this.movieRepository.update(id, data)
+    const updatedData = {
+      ...data,
+      ...(data.releaseDate ? { releaseDate: new Date(data.releaseDate) } : {})
+    }
+
+    return this.movieRepository.update(id, updatedData)
   }
 
   async deleteMovie(

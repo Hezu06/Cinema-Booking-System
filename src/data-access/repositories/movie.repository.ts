@@ -5,7 +5,6 @@ import type {
   CreateMovieData,
   UpdateMovieData
 } from '../../business/interfaces/movie.interface.js'
-import { release } from 'node:os'
 import type { Movie } from '../../business/models/movie.model.js'
 
 export class PrismaMovieRepository implements MovieRepository {
