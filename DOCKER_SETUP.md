@@ -1,256 +1,198 @@
-# 🎬 Cinema Booking System - Docker Setup
+# 🎬 Cinema Booking System - Docker Setup & Onboarding Guide
 
-## 📋 Yêu cầu hệ thống
+Tài liệu hướng dẫn chi tiết dành cho toàn bộ thành viên trong team khi clone/pull dự án về máy, cách khởi chạy hệ thống bằng Docker, kiểm thử API qua Swagger UI và các lưu ý kỹ thuật quan trọng.
 
-- Docker Desktop hoặc Docker Engine
-- Docker Compose v2.0+
-- PowerShell (Windows) hoặc Bash (Linux/Mac)
+---
 
-## 🏗️ Cấu trúc Docker
+## 📋 1. Yêu cầu hệ thống (Prerequisites)
 
-### **Dockerfile - Multi-stage Build**
+Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đặt:
+- **Docker Desktop** (bản mới nhất) kèm Docker Compose v2.
+  - *Lưu ý trên Windows*: Hãy đảm bảo đã bật **WSL 2 backend** trong Docker Desktop settings (`General` -> `Use the WSL 2 based engine`).
+  - Đảm bảo Docker Desktop đang chạy (icon cá voi ở thanh tác vụ không bị đỏ/tắt).
+- **Git**: Dùng để clone/pull code từ repository.
+- **Node.js v22+** *(tùy chọn)*: Chỉ cần thiết nếu bạn muốn chạy dự án trực tiếp ở máy thật (Local Host) thay vì chạy trong container.
 
-#### **Stage 1: Builder**
-```
-FROM node:22-alpine
-- Cài Node.js 22 + npm
-- Cài build tools (python, make, g++, gcc, git)
-- Cài tất cả dependencies (dev + production)
-- Generate Prisma Client
-- Build TypeScript → JavaScript
-```
+---
 
-#### **Stage 2: Production**
-```
-FROM node:22-alpine
-- Runtime minimal (chỉ production dependencies)
-- Cài curl, bash, dumb-init cho health checks
-- Copy built files từ builder
-- Tạo non-root user (bảo mật)
-- Expose port 5000
-- Health checks tự động
-```
+## 🚀 2. Quy trình khi mới Clone / Pull code về (Bắt buộc làm)
 
-## 🚀 Quick Start
+Mỗi khi bạn mới **clone repo** về máy, hoặc vừa **pull branch mới** có cập nhật từ Git:
 
-### **1. Build và chạy Production**
+### **Bước 1: Tạo file cấu hình môi trường `.env`**
+File `.env` chứa cấu hình kết nối database và các secret keys (không được commit lên git). Tạo file `.env` từ file mẫu:
 
-```bash
-# Build image
-docker-compose build
+- **Trên Windows PowerShell:**
+  ```powershell
+  copy .env.example .env
+  ```
+- **Trên Linux / macOS / Git Bash:**
+  ```bash
+  cp .env.example .env
+  ```
 
-# Chạy tất cả services (MySQL + App)
-docker-compose up -d
+*(Mặc định file `.env.example` đã được cấu hình sẵn thông số kết nối khớp với service MySQL trong Docker: `cbs:cbs_password@mysql:3306/cinema_booking`, bạn không cần sửa gì thêm để chạy với Docker)*.
 
-# Xem logs
-docker-compose logs -f app
-```
+---
 
-### **2. Development Mode**
+### **Bước 2: Khởi động hệ thống bằng Docker Compose**
+
+Chạy lệnh sau tại thư mục gốc của dự án:
 
 ```bash
-# Chạy với auto-reload (npm run dev)
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up
-
-# Hoặc cùng lệnh
-docker-compose up
+docker compose up -d --build
 ```
 
-### **3. Stop Services**
+> [!TIP]
+> **Giải thích:**
+> - Cờ `--build` sẽ tự động build lại image nếu có bất kỳ thay đổi nào trong mã nguồn hoặc `package.json` (cài thêm thư viện mới).
+> - Nhờ cấu hình **Selective Bind Mount** (`./src:/app/src`), toàn bộ thư viện `node_modules` bên trong container luôn được cập nhật chính xác từ image mà **không cần bất kỳ cờ đặc biệt nào khác**.
 
-```bash
-# Stop containers
-docker-compose stop
+---
 
-# Stop và xóa containers
-docker-compose down
+### **Bước 3: Kiểm tra hệ thống**
 
-# Stop và xóa volumes (cẩn thận!)
-docker-compose down -v
-```
+1. **Kiểm tra trạng thái containers:**
+   ```bash
+   docker compose ps
+   ```
+   *Cả 2 container `cbs-mysql` (healthy) và `cbs-app` đều ở trạng thái `Up`.*
 
-## 📊 Database
+2. **Xem logs container app:**
+   ```bash
+   docker compose logs -f app
+   ```
+   *(Thấy dòng `Cinema Booking System API running on port 5000` là ứng dụng đã khởi động thành công. Bấm `Ctrl + C` để thoát xem log).*
 
-### **Migrations**
+---
 
-```bash
-# Chạy migrations
-docker-compose exec app npx prisma migrate deploy
+## 📑 3. Bảng tra cứu lệnh chạy hàng ngày (Daily Cheat Sheet)
 
-# Tạo migration mới
-docker-compose exec app npx prisma migrate dev --name feature_name
+Hàng ngày làm việc, bạn chỉ cần dùng các lệnh cơ bản sau:
 
-# Reset database (dev only!)
-docker-compose exec app npx prisma migrate reset
-```
+| Tình huống thực tế | Lệnh cần chạy | Giải thích |
+| :--- | :--- | :--- |
+| **Bật app làm việc hàng ngày** *(code logic thông thường)* | `docker compose up -d` | Rất nhanh. Nhờ tính năng mount volume `./src` và `tsx watch`, bạn sửa code trong `src/` là container tự động cập nhật ngay lập tức (Auto-reload). |
+| **Tắt app khi hết ngày làm việc** | `docker compose stop` | Tạm dừng containers, không mất dữ liệu. |
+| **Khi `git pull` có code mới hoặc thư viện mới** | `docker compose up -d --build` | Tự động rebuild image và cập nhật mã nguồn mới nhất. |
+| **Tắt và dọn dẹp containers** | `docker compose down` | Xóa container & network tạm, giữ nguyên dữ liệu MySQL. |
+| **Xóa trắng toàn bộ làm lại từ đầu** *(Reset sạch cả DB)* | `docker compose down -v` | ⚠️ **Cẩn thận:** Xóa sạch dữ liệu database đã tạo để tạo môi trường trắng tinh. |
 
-### **Prisma Studio**
+---
 
-```bash
-# Mở Prisma Studio UI
-docker-compose exec app npm run prisma:studio
-# Truy cập: http://localhost:5555
-```
+## 🌐 4. Kiểm thử API qua Swagger UI (Không cần Postman)
 
-## 🔍 Monitoring & Debugging
+Dự án đã tích hợp sẵn giao diện **Swagger UI** để cả team có thể xem tài liệu mô tả API và gửi request test trực tiếp trên trình duyệt web.
 
-### **Xem Logs**
+### **Đường dẫn truy cập:**
+👉 **[http://localhost:5000/api-docs](http://localhost:5000/api-docs)**
 
-```bash
-# Logs từ app
-docker-compose logs -f app
+*(Nếu bạn chạy bằng `npm run dev` ở máy host ngoài Docker, cổng sẽ là [http://localhost:3000/api-docs](http://localhost:3000/api-docs))*.
 
-# Logs từ MySQL
-docker-compose logs -f mysql
+### **Các nhóm API trên Swagger:**
+1. **Kiểm tra sức khỏe hệ thống (Health Check)**: `GET /health`
+2. **Quản lý Auth (`/api/auth`)**:
+   - `POST /api/auth/register`: Đăng ký tài khoản mới (họ tên, email, password, số điện thoại).
+   - `POST /api/auth/login`: Đăng nhập lấy `accessToken` (JWT).
+   - `GET /api/auth/me`: Xem thông tin profile của user hiện tại (yêu cầu Bearer Token).
+3. **Quản lý Phim (`/api/movies`)**:
+   - `GET /api/movies`: Lấy danh sách phim.
+   - `POST /api/movies`: Thêm phim mới.
+   - `GET /api/movies/{id}`: Chi tiết phim theo UUID.
+   - `PUT /api/movies/{id}`: Sửa phim.
+   - `DELETE /api/movies/{id}`: Xóa phim.
 
-# Logs từ tất cả
-docker-compose logs -f
-```
+### 💡 Hướng dẫn gửi request có Token xác thực (JWT) trên Swagger:
+1. Mở endpoint `POST /api/auth/login`, bấm **Try it out**, nhập tài khoản mật khẩu và bấm **Execute**.
+2. Copy chuỗi `accessToken` trong phần Response Body trả về.
+3. Cuộn lên đầu trang Swagger, bấm vào nút **Authorize 🔓** (màu xanh lá ở góc phải).
+4. Dán token vừa copy vào ô **Value** *(lưu ý: không cần gõ thêm chữ `Bearer `)*.
+5. Bấm nút **Authorize** rồi bấm **Close**.
+6. Bây giờ các API yêu cầu đăng nhập như `GET /api/auth/me` sẽ tự động đính kèm token khi bạn bấm Execute.
 
-### **Truy cập Container Shell**
+---
 
-```bash
-# App container
-docker-compose exec app bash
+## 📊 5. Quản trị Database & Prisma trong Docker
 
-# MySQL container
-docker-compose exec mysql bash
+Database MySQL (`mysql:8.4`) đã được cấu hình tự động:
+- **Tự động chạy Migration**: Mỗi khi container app khởi động, script [entrypoint.sh](file:///C:/Users/nguye/source/repos/Cinema-Booking-System/entrypoint.sh) sẽ tự động chạy `npx prisma migrate deploy` để đồng bộ các bảng mới nhất vào database.
 
-# MySQL CLI
-docker-compose exec mysql mysql -u cbs -p cinema_booking
-# Password: cbs_password
-```
+### Các thao tác thường dùng:
 
-### **Health Check**
+1. **Mở giao diện trực quan Prisma Studio (Database GUI):**
+   ```bash
+   docker compose exec app npx prisma studio
+   ```
+   Sau đó mở trình duyệt tại: **http://localhost:5555** để xem, sửa, thêm dữ liệu các bảng `User`, `Movie` trực quan.
 
-```bash
-# Kiểm tra status
-docker-compose ps
+2. **Chạy Migration thủ công bên trong container:**
+   ```bash
+   docker compose exec app npx prisma migrate deploy
+   ```
 
-# Manual health check
-docker-compose exec app curl http://localhost:5000/health
-```
+3. **Truy cập MySQL qua dòng lệnh CLI:**
+   ```bash
+   docker compose exec mysql mysql -u cbs -pcbs_password cinema_booking
+   ```
 
-## 🔐 Environment Variables
+---
 
-File `.env` được tạo từ `.env.example`:
+## 📦 6. Danh sách các Cổng (Ports) trên máy Host
 
-```env
-NODE_ENV=production
-PORT=5000
-HOST=0.0.0.0
-DATABASE_URL=mysql://cbs:cbs_password@mysql:3306/cinema_booking
-JWT_SECRET=your_secret_key_here
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:3000
-LOG_LEVEL=info
-```
+| Service / Tính năng | Port | Đường dẫn URL | Mô tả |
+| :--- | :--- | :--- | :--- |
+| **API Server & Swagger** | `5000` | [http://localhost:5000/api-docs](http://localhost:5000/api-docs) | Giao diện tài liệu API và các endpoints |
+| **Health Check** | `5000` | [http://localhost:5000/health](http://localhost:5000/health) | Kiểm tra trạng thái máy chủ |
+| **MySQL Database** | `3306` | `localhost:3306` | Kết nối DB qua DBeaver, TablePlus, Workbench |
+| **Prisma Studio** | `5555` | [http://localhost:5555](http://localhost:5555) | Giao diện xem dữ liệu database |
+| **Node.js Debugger** | `9229` | `chrome://inspect` | Port đính kèm debugger cho VSCode / Chrome |
 
-**⚠️ Trong production, thay đổi các giá trị sensitive!**
+---
 
-## 📦 Ports
+## 🐛 7. Xử lý các sự cố thường gặp (Troubleshooting)
 
-| Service | Port | URL |
-|---------|------|-----|
-| App (Express) | 5000 | http://localhost:5000 |
-| MySQL | 3306 | mysql://cbs:cbs_password@mysql:3306 |
-| Prisma Studio | 5555 | http://localhost:5555 |
-| Node Debugger | 9229 | chrome://inspect |
+### 🔴 1. Lỗi xung đột cổng `3306` hoặc `5000` (`port is already allocated`)
+- **Nguyên nhân**: Máy tính của bạn đang có một phiên bản MySQL cài sẵn (XAMPP, MySQL Server) hoặc một service khác đang chạy chiếm cổng 3306/5000.
+- **Cách xử lý**:
+  - Tắt service MySQL local ở Services (Windows: `services.msc` -> tìm `MySQL` -> bấm `Stop`).
+  - Hoặc sửa file [docker-compose.yml](file:///C:/Users/nguye/source/repos/Cinema-Booking-System/docker-compose.yml):
+    ```yaml
+    ports:
+      - "3307:3306" # Đổi cổng ngoài máy host thành 3307 thay vì 3306
+    ```
 
-## 🐛 Troubleshooting
+### 🔴 2. Container MySQL không khởi động được hoặc bị exited
+- **Cách kiểm tra log**:
+  ```bash
+  docker compose logs mysql
+  ```
+- **Reset lại môi trường DB sạch nếu bị hỏng dữ liệu**:
+  ```bash
+  docker compose down -v
+  docker compose up -d --build
+  ```
 
-### **Container không khởi động**
+---
 
-```bash
-# Xem chi tiết logs
-docker-compose logs app
+## 🏗️ 8. Cấu trúc Build Dockerfile chi tiết
 
-# Rebuild image
-docker-compose build --no-cache
-
-# Restart
-docker-compose restart
-```
-
-### **Database connection failed**
-
-```bash
-# Kiểm tra MySQL status
-docker-compose logs mysql
-
-# Connect trực tiếp
-docker-compose exec mysql mysql -u cbs -p cinema_booking
-```
-
-### **Dependencies không cài đúng**
-
-```bash
-# Clear cache và rebuild
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up
-```
-
-### **Port đã được sử dụng**
-
-```bash
-# Thay đổi port trong docker-compose.yml
-ports:
-  - "5001:5000"  # Dùng 5001 thay vì 5000
-```
-
-## 📝 Build Process Chi Tiết
+Dự án áp dụng mô hình **Multi-stage Build** tối ưu trong [Dockerfile](file:///C:/Users/nguye/source/repos/Cinema-Booking-System/Dockerfile):
 
 ```
-1. Builder Stage:
-   ├─ Pull node:22-alpine
-   ├─ Cài build tools (gcc, make, python...)
-   ├─ npm ci (install lock file)
-   ├─ npx prisma generate (tạo Prisma Client)
-   ├─ npm run build (tsc để build TypeScript)
-   └─ Output: /app/dist, node_modules
+1. Builder Stage (node:22-alpine):
+   ├── Cài đặt build tools (gcc, g++, make, python3)
+   ├── npm ci (cài đặt đầy đủ dependencies)
+   ├── npx prisma generate (sinh Prisma Client vào /app/generated/prisma)
+   └── npm run build (biên dịch TypeScript sang dist/src/server.js)
 
-2. Production Stage:
-   ├─ Pull node:22-alpine clean
-   ├─ Cài runtime deps (curl, bash, dumb-init)
-   ├─ npm ci --omit=dev (chỉ production)
-   ├─ COPY từ builder stage
-   ├─ Tạo non-root user (nodejs)
-   ├─ chmod +x entrypoint.sh
-   ├─ HEALTHCHECK setup
-   └─ CMD bash entrypoint.sh
-```
-
-## 🔧 Entrypoint Script
-
-File `entrypoint.sh` tự động:
-
-1. Chạy Prisma migrations (`prisma migrate deploy`)
-2. Nếu fail → chạy `prisma db push`
-3. Generate Prisma Client
-4. Khởi động ứng dụng (`node dist/server.js`)
-
-## 📈 Performance Tips
-
-- **Multi-stage build** giảm image size ~60%
-- **Alpine Linux** giảm base size từ 900MB → 150MB
-- **Non-root user** tăng security
-- **Health checks** giúp orchestration
-- **npm ci** thay vì `npm install` (chính xác hơn)
-
-## 🚄 Build Optimization
-
-```bash
-# Chỉ rebuild service cụ thể
-docker-compose build app
-
-# Build mà không cache
-docker-compose build --no-cache
-
-# View build history
-docker history cinema-booking-system-app
+2. Production Stage (node:22-alpine):
+   ├── Runtime tối giản, cài dumb-init, curl, bash
+   ├── npm ci --omit=dev (chỉ giữ production dependencies)
+   ├── Copy /app/dist và /app/generated từ Builder Stage
+   ├── Tạo non-root user (nodejs) để chạy container an toàn
+   └── entrypoint.sh: Tự động chạy Prisma migration và khởi chạy node dist/src/server.js
 ```
 
 ---
 
-**Tạo bởi Cinema Booking System Team** 🎬
+Chúc team phát triển dự án hiệu quả và thuận lợi! 🚀
