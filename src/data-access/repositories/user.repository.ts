@@ -1,14 +1,15 @@
 import { prisma } from "../prisma/client.js";
-import type { UserRole, UserStatus } from "../../../generated/prisma/client.js";
+import type { UserRepository, CreateUserData } from "../../business/interfaces/user.interface.js";
+import type { SafeUser, User } from "../../business/models/user.model.js";
 
-export const userRepository = {
-    findByEmail(email: string) {
+export class PrismaUserRepository implements UserRepository {
+    async findByEmail(email: string): Promise<User | null> {
         return prisma.user.findUnique({
             where: { email },
         });
-    },
+    }
 
-    findById(id: string) {
+    async findById(id: string): Promise<SafeUser | null> {
         return prisma.user.findUnique({
             where: { id },
             select: {
@@ -21,16 +22,9 @@ export const userRepository = {
                 createdAt: true,
             },
         });
-    },
+    }
 
-    create(data: {
-        fullName: string;
-        email: string;
-        passwordHash: string;
-        phone: string;
-        role?: UserRole;
-        status?: UserStatus;
-    }) {
+    async create(data: CreateUserData): Promise<SafeUser> {
         return prisma.user.create({
             data,
             select: {
@@ -43,5 +37,7 @@ export const userRepository = {
                 createdAt: true,
             },
         });
-    },
-};
+    }
+}
+
+export const userRepository = new PrismaUserRepository();

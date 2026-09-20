@@ -1,11 +1,14 @@
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
-import { userRepository } from "../../data-access/repositories/user.repository.js";
-import type { RegisterInput } from "../../api/validators/auth.validator.js";
+import type { UserRepository } from "../interfaces/user.interface.js";
+import type { RegisterDTO, AuthResult } from "../interfaces/auth.interface.js";
+import type { SafeUser } from "../models/user.model.js";
 
-export const authService = {
-    async register(input: RegisterInput) {
-        const existingUser = await userRepository.findByEmail(input.email);
+export class AuthService {
+    constructor(private readonly userRepository: UserRepository) {}
+
+    async register(input: RegisterDTO): Promise<SafeUser> {
+        const existingUser = await this.userRepository.findByEmail(input.email);
 
         if (existingUser) {
             throw new Error("Email đã được sử dụng");
@@ -13,16 +16,16 @@ export const authService = {
 
         const passwordHash = await bcrypt.hash(input.password, 12);
 
-        return userRepository.create({
+        return this.userRepository.create({
             fullName: input.fullName,
             email: input.email,
             phone: input.phone,
             passwordHash,
         });
-    },
+    }
 
-    async login(email: string, password: string) {
-        const user = await userRepository.findByEmail(email);
+    async login(email: string, password: string): Promise<AuthResult> {
+        const user = await this.userRepository.findByEmail(email);
 
         if (!user) {
             throw new Error("Email hoặc mật khẩu không đúng");
@@ -68,8 +71,13 @@ export const authService = {
                 phone: user.phone,
                 role: user.role,
                 status: user.status,
+                createdAt: user.createdAt,
             },
             accessToken,
         };
-    },
-};
+    }
+
+    async getProfile(userId: string): Promise<SafeUser | null> {
+        return this.userRepository.findById(userId);
+    }
+}

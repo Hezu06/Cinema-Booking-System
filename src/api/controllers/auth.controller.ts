@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { loginSchema, registerSchema } from "../validators/auth.validator.js";
-import { authService } from "../../business/services/auth.service.js";
+import { AuthService } from "../../business/services/auth.service.js";
 import { userRepository } from "../../data-access/repositories/user.repository.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
+
+const authService = new AuthService(userRepository);
 
 function isPrismaUniqueConstraintError(
     error: unknown
@@ -107,7 +109,7 @@ export async function getMe(
 ) {
     try {
         const authenticatedRequest = req as AuthenticatedRequest;
-        const user = await userRepository.findById(authenticatedRequest.user.userId);
+        const user = await authService.getProfile(authenticatedRequest.user.userId);
 
         if (!user) {
             return res.status(404).json({
