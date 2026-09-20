@@ -12,10 +12,6 @@ npx prisma migrate deploy || {
 	npx prisma db push --skip-generate || true
 }
 
-# ===== GENERATE PRISMA CLIENT =====
-echo "🔧 Generating Prisma Client..."
-npx prisma generate
-
 # ===== START APPLICATION =====
 echo "✅ Starting Node.js application..."
-exec node dist/server.js
+exec node dist/src/server.js
