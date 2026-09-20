@@ -68,7 +68,6 @@ COPY .env.example .env
 # Copy các file đã biên dịch từ builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/generated ./generated
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # ===== COPY ENTRYPOINT SCRIPT =====
 COPY entrypoint.sh ./

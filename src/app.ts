@@ -4,12 +4,19 @@ import cors from "cors";
 
 import movieRouter from "./api/routes/movie.routes.js";
 import authRouter from "./api/routes/auth.routes.js";
+import { setupSwagger } from "./config/swagger.js";
 
 const app = express()
 
-app.use(helmet());
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+    })
+);
 app.use(cors());
 app.use(express.json());
+
+setupSwagger(app);
 
 app.get("/health", (_req, res) => {
     res.status(200).json({
