@@ -18,20 +18,19 @@ model User {
   email        String     @unique
   passwordHash String
   phone        String     @unique
-  role         UserRole   @default(USER)
+  role         UserRole   @default(CUSTOMER)
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
 }
 
 enum UserRole {
-  USER
+  CUSTOMER
   ADMIN
 }
 
 enum UserStatus {
   ACTIVE
-  INACTIVE
-  BANNED
+  BLOCKED
 }
 
 model Movie {
@@ -43,6 +42,8 @@ model Movie {
   releaseDate     DateTime
   posterUrl       String
   status          MovieStatus @default(COMING_SOON)
+
+  @@unique([title, releaseDate])
 }
 
 enum MovieStatus {

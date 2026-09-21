@@ -8,6 +8,7 @@ const adapter = new PrismaMariaDb({
     user: process.env.DB_USER ?? "cbs",
     password: process.env.DB_PASSWORD ?? "cbs_password",
     database: process.env.DB_NAME ?? "cinema_booking",
+    allowPublicKeyRetrieval: true,
 });
 
 export const prisma = new PrismaClient({ adapter });

@@ -1,5 +1,5 @@
 export const UserRole = {
-  USER: 'USER',
+  CUSTOMER: 'CUSTOMER',
   ADMIN: 'ADMIN',
 } as const;
 
@@ -7,8 +7,7 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const UserStatus = {
   ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  BANNED: 'BANNED',
+  BLOCKED: 'BLOCKED',
 } as const;
 
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];

@@ -5,12 +5,7 @@ import type {
 } from '../interfaces/movie.interface.js'
 
 export class MovieService {
-
-  // 'private' means the property is only accessible inside the class.
-  // 'readonly' means we don't intend to replace the repository later.
-  constructor(
-    private readonly movieRepository: MovieRepository
-  ) {}
+  constructor(private readonly movieRepository: MovieRepository) {}
 
   async getAllMovies() {
     return this.movieRepository.findAll()
@@ -21,30 +16,69 @@ export class MovieService {
   }
 
   async createMovie(data: CreateMovieData) {
-    const newMovie = {
+    const releaseDate = new Date(data.releaseDate)
+    const trimmedTitle = data.title.trim()
+
+    const existingMovie = await this.movieRepository.findByTitleAndReleaseDate(
+      trimmedTitle,
+      releaseDate
+    )
+
+    if (existingMovie) {
+      throw new Error(
+        `Phim '${trimmedTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`
+      )
+    }
+
+    const newMovie: CreateMovieData = {
       ...data,
-      releaseDate: new Date(data.releaseDate) 
-      // JSON has no Date type => Need to handle conversion from string to Date
+      title: trimmedTitle,
+      releaseDate: releaseDate,
     }
 
     return this.movieRepository.create(newMovie)
   }
 
-  async updateMovie(
-    id: string,
-    data: UpdateMovieData
-  ) {
-    const updatedData = {
+  async updateMovie(id: string, data: UpdateMovieData) {
+    const currentMovie = await this.movieRepository.findById(id)
+    if (!currentMovie) {
+      return null
+    }
+
+    const targetTitle =
+      data.title !== undefined ? data.title.trim() : currentMovie.title
+    const targetReleaseDate =
+      data.releaseDate !== undefined
+        ? new Date(data.releaseDate)
+        : currentMovie.releaseDate
+
+    // Nếu tiêu đề hoặc ngày giờ phát hành thay đổi, kiểm tra xung đột với các phim khác
+    if (
+      targetTitle !== currentMovie.title ||
+      targetReleaseDate.getTime() !== currentMovie.releaseDate.getTime()
+    ) {
+      const conflictMovie = await this.movieRepository.findByTitleAndReleaseDate(
+        targetTitle,
+        targetReleaseDate
+      )
+
+      if (conflictMovie && conflictMovie.id !== id) {
+        throw new Error(
+          `Phim '${targetTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`
+        )
+      }
+    }
+
+    const updatedData: UpdateMovieData = {
       ...data,
-      ...(data.releaseDate ? { releaseDate: new Date(data.releaseDate) } : {})
+      ...(data.title !== undefined ? { title: targetTitle } : {}),
+      ...(data.releaseDate !== undefined ? { releaseDate: targetReleaseDate } : {}),
     }
 
     return this.movieRepository.update(id, updatedData)
   }
 
-  async deleteMovie(
-    id: string
-  ) {
+  async deleteMovie(id: string) {
     return this.movieRepository.delete(id)
   }
 }

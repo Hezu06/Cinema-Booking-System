@@ -1,69 +1,37 @@
-import { MovieStatus } from "../../business/models/movie.model.js"
+import { z } from "zod";
+import { MovieStatus } from "../../business/models/movie.model.js";
 
-export function validateCreateMovie(data: any): string[] {
-  const errors: string[] = []
+export const movieStatusSchema = z.enum([
+  MovieStatus.COMING_SOON,
+  MovieStatus.NOW_SHOWING,
+  MovieStatus.ENDED,
+]);
 
-  if (!data.title || typeof data.title !== 'string') {
-    errors.push('title is required and must be a string')
-  }
+export const createMovieSchema = z.object({
+  title: z.string().trim().min(1, "title is required and must not be empty"),
+  description: z.string().trim().min(1, "description is required and must not be empty"),
+  durationMinutes: z
+    .number({
+      message: "durationMinutes is required and must be a positive number",
+    })
+    .int("durationMinutes must be an integer")
+    .positive("durationMinutes must be a positive number"),
+  genre: z.string().trim().min(1, "genre is required and must not be empty"),
+  releaseDate: z.coerce.date({
+    message: "releaseDate is required and must be a valid date",
+  }),
+  posterUrl: z.string().trim().url("posterUrl must be a valid URL"),
+  status: movieStatusSchema,
+});
 
-  if (!data.description || typeof data.description !== 'string') {
-    errors.push('description is required and must be a string')
-  }
+export type CreateMovieInput = z.infer<typeof createMovieSchema>;
 
-  if (
-    data.durationMinutes == undefined ||
-    typeof data.durationMinutes !== 'number' ||
-    data.durationMinutes <= 0
-  ) {
-    errors.push('durationMinutes is required and must be a positive number')
-  }
+export const updateMovieSchema = createMovieSchema.partial();
 
-  if (!data.genre || typeof data.genre !== 'string') {
-    errors.push('genre is required and must be a string')
-  }
+export type UpdateMovieInput = z.infer<typeof updateMovieSchema>;
 
-  if (!data.releaseDate) {
-    errors.push('releaseDate is required')
-  }
+export const movieIdParamSchema = z.object({
+  id: z.string().uuid("ID phim phải có định dạng UUID hợp lệ"),
+});
 
-  if (!data.posterUrl || typeof data.posterUrl !== 'string') {
-    errors.push('posterUrl is required and must be a string')
-  }
-
-  if (!Object.values(MovieStatus).includes(data.status)) {
-    errors.push('status is invalid')
-  }
-
-  return errors
-}
-
-export function validateUpdateMovie(data: any): string[] {
-  const errors: string[] = []
-
-  if (
-      data.durationMinutes !== undefined &&
-      (
-        typeof data.durationMinutes !== 'number' ||
-        data.durationMinutes <= 0
-      )
-  ) {
-    errors.push('durationMinutes must be a positive number')
-  }
-
-  if (
-    data.status !== undefined &&
-    !Object.values(MovieStatus).includes(data.status)
-  ) {
-    errors.push('status is invalid')
-  }
-
-  if (
-    data.title !== undefined &&
-    typeof data.title !== 'string'
-  ) {
-    errors.push('title must be a string')
-  }
-
-  return errors
-}
+export type MovieIdParam = z.infer<typeof movieIdParamSchema>;
