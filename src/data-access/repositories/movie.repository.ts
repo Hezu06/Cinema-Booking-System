@@ -25,6 +25,17 @@ export class PrismaMovieRepository implements MovieRepository {
     })
   }
 
+  async findByTitleAndReleaseDate(title: string, releaseDate: Date): Promise<Movie | null> {
+    return prisma.movie.findUnique({
+      where: {
+        title_releaseDate: {
+          title: title.trim(),
+          releaseDate: releaseDate,
+        },
+      },
+    })
+  }
+
   async create(data: CreateMovieData): Promise<Movie> {
     return prisma.movie.create({
       data: {
@@ -54,7 +65,15 @@ export class PrismaMovieRepository implements MovieRepository {
       where: {
         id: id,
       },
-      data: data,
+      data: {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.durationMinutes !== undefined ? { durationMinutes: data.durationMinutes } : {}),
+        ...(data.genre !== undefined ? { genre: data.genre } : {}),
+        ...(data.releaseDate !== undefined ? { releaseDate: data.releaseDate } : {}),
+        ...(data.posterUrl !== undefined ? { posterUrl: data.posterUrl } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+      },
     })
   }
 

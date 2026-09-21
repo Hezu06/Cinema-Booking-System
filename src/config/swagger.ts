@@ -44,12 +44,12 @@ export const swaggerSpec = {
       },
       UserRole: {
         type: "string",
-        enum: ["USER", "ADMIN"],
-        example: "USER",
+        enum: ["CUSTOMER", "ADMIN"],
+        example: "CUSTOMER",
       },
       UserStatus: {
         type: "string",
-        enum: ["ACTIVE", "INACTIVE", "BANNED"],
+        enum: ["ACTIVE", "BLOCKED"],
         example: "ACTIVE",
       },
       Movie: {
@@ -305,6 +305,7 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: true },
                     message: { type: "string", example: "Get all movies" },
                     data: {
                       type: "array",
@@ -319,7 +320,8 @@ export const swaggerSpec = {
       },
       post: {
         tags: ["Movies"],
-        summary: "Tạo một bộ phim mới",
+        summary: "Tạo một bộ phim mới (Yêu cầu quyền Admin)",
+        security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -336,8 +338,9 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: true },
                     message: { type: "string", example: "Movie created" },
-                    movie: { $ref: "#/components/schemas/Movie" },
+                    data: { $ref: "#/components/schemas/Movie" },
                   },
                 },
               },
@@ -345,6 +348,30 @@ export const swaggerSpec = {
           },
           400: {
             description: "Dữ liệu tạo phim không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          401: {
+            description: "Chưa đăng nhập hoặc token không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          403: {
+            description: "Không có quyền Admin",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          409: {
+            description: "Phim với tiêu đề và ngày giờ phát hành này đã tồn tại",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -376,10 +403,19 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: true },
                     message: { type: "string", example: "Get movie 64162d7a-3491-4e80-945f-771476fbc7e3" },
                     data: { $ref: "#/components/schemas/Movie" },
                   },
                 },
+              },
+            },
+          },
+          400: {
+            description: "ID phim không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
               },
             },
           },
@@ -390,6 +426,7 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: false },
                     message: { type: "string", example: "Movie not found" },
                   },
                 },
@@ -400,7 +437,8 @@ export const swaggerSpec = {
       },
       put: {
         tags: ["Movies"],
-        summary: "Cập nhật thông tin một bộ phim",
+        summary: "Cập nhật thông tin một bộ phim (Yêu cầu quyền Admin)",
+        security: [{ BearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -427,15 +465,40 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: true },
                     message: { type: "string", example: "Movie updated" },
-                    movie: { $ref: "#/components/schemas/Movie" },
+                    data: { $ref: "#/components/schemas/Movie" },
                   },
                 },
               },
             },
           },
           400: {
-            description: "Dữ liệu cập nhật không hợp lệ",
+            description: "Dữ liệu cập nhật hoặc ID không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          401: {
+            description: "Chưa đăng nhập hoặc token không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          403: {
+            description: "Không có quyền Admin",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          409: {
+            description: "Phim với tiêu đề và ngày giờ phát hành này đã tồn tại",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
@@ -449,6 +512,7 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: false },
                     message: { type: "string", example: "Movie not found" },
                   },
                 },
@@ -459,7 +523,8 @@ export const swaggerSpec = {
       },
       delete: {
         tags: ["Movies"],
-        summary: "Xóa một bộ phim theo ID",
+        summary: "Xóa một bộ phim theo ID (Yêu cầu quyền Admin)",
+        security: [{ BearerAuth: [] }],
         parameters: [
           {
             name: "id",
@@ -478,10 +543,35 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: true },
                     message: { type: "string", example: "Movie deleted successfully" },
-                    movie: { $ref: "#/components/schemas/Movie" },
+                    data: { $ref: "#/components/schemas/Movie" },
                   },
                 },
+              },
+            },
+          },
+          400: {
+            description: "ID phim không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          401: {
+            description: "Chưa đăng nhập hoặc token không hợp lệ",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+          403: {
+            description: "Không có quyền Admin",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
               },
             },
           },
@@ -492,6 +582,7 @@ export const swaggerSpec = {
                 schema: {
                   type: "object",
                   properties: {
+                    success: { type: "boolean", example: false },
                     message: { type: "string", example: "Movie not found" },
                   },
                 },

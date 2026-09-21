@@ -6,3 +6,5 @@ generated/
 .windsurf/
 .claude/
 .agents/
+docs/
+*.pdf

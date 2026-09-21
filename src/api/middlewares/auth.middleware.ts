@@ -39,7 +39,10 @@ export async function authMiddleware(
         });
     }
 
-    const token = authorization.slice("Bearer ".length).trim();
+    let token = authorization.slice("Bearer ".length).trim();
+    while (token.toLowerCase().startsWith("bearer ")) {
+        token = token.slice("bearer ".length).trim();
+    }
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
