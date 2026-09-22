@@ -5,7 +5,7 @@ import cors from "cors";
 import movieRouter from "./api/routes/movie.routes.js";
 import authRouter from "./api/routes/auth.routes.js";
 import cinemaRouter from "./api/routes/cinema.routes.js";
-import { setupSwagger } from "./config/swagger.js";
+import { setupSwagger } from "./config/swagger/index.js";
 
 const app = express()
 
