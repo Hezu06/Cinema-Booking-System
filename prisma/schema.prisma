@@ -51,3 +51,39 @@ enum MovieStatus {
   NOW_SHOWING
   ENDED
 }
+
+enum RoomType {
+  STANDARD
+  VIP
+  IMAX
+  THREE_D
+}
+
+model Cinema {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rooms Room[]
+
+  @@map("cinemas")
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  cinemaId  String   @map("cinema_id")
+  name      String
+  type      RoomType
+  capacity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cinema Cinema @relation(fields: [cinemaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([cinemaId, name])
+  @@index([cinemaId])
+  @@map("rooms")
+}

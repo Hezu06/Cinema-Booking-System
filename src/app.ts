@@ -4,6 +4,7 @@ import cors from "cors";
 
 import movieRouter from "./api/routes/movie.routes.js";
 import authRouter from "./api/routes/auth.routes.js";
+import cinemaRouter from "./api/routes/cinema.routes.js";
 import { setupSwagger } from "./config/swagger.js";
 
 const app = express()
@@ -26,6 +27,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use('/api/movies', movieRouter)
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authRouter)
+app.use('/api/cinema', cinemaRouter)
 
 export default app;
