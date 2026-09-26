@@ -26,8 +26,9 @@ app.get("/health", (_req, res) => {
     });
 });
 
-app.use('/api/movies', movieRouter)
-app.use("/api/auth", authRouter)
-app.use('/api/cinema', cinemaRouter)
+app.use('/api/movies', movieRouter);
+app.use("/api/auth", authRouter);
+app.use('/api/cinemas', cinemaRouter);
+app.use('/api/cinema', cinemaRouter);
 
 export default app;
