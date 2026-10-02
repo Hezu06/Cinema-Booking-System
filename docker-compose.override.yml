@@ -11,17 +11,15 @@ services:
     environment:
       NODE_ENV: development
       DEBUG: "cinema-booking:*"
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
 
     ports:
       - "5000:5000"
       - "9229:9229"  # Node debugger
 
     volumes:
-      - ./src:/app/src
-      - ./prisma:/app/prisma
-      - ./generated:/app/generated
+      - .:/app
+      - /app/node_modules
+      - /app/dist
 
     command: npm run dev
 

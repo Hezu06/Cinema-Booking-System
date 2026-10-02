@@ -18,6 +18,6 @@
     "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true
   },
-  "include": [ "src/**/*.ts", "prisma.config.ts", "generated/**/*" ],
+  "include": [ "src/**/*.ts", "prisma.config.ts" ],
   "exclude": [ "node_modules", "dist" ]
 }

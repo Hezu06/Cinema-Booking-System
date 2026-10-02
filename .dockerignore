@@ -18,5 +18,3 @@ Dockerfile
 coverage
 .turbo
 build
-docs
-*.pdf
