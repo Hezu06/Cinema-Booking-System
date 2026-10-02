@@ -99,6 +99,9 @@ export async function login(req: Request, res: Response) {
         return res.status(500).json({
             success: false,
             message: "Đã xảy ra lỗi trong quá trình đăng nhập",
+            ...(process.env.NODE_ENV !== "production" && error instanceof Error
+                ? { details: error.message }
+                : {}),
         });
     }
 }
