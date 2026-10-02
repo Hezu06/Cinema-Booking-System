@@ -17,7 +17,6 @@ RUN apk add --no-cache \
 COPY package.json package-lock.json ./
 COPY tsconfig.json tsconfig.prisma.json ./
 COPY prisma ./prisma
-COPY prisma.config.ts ./
 COPY .env.example .env
 
 # ===== CÀI ĐẶT NPM DEPENDENCIES =====
@@ -61,13 +60,12 @@ RUN npm ci --omit=dev --verbose && \
 
 # ===== COPY PRISMA SCHEMA =====
 COPY prisma ./prisma
-COPY prisma.config.ts ./
 COPY .env.example .env
 
 # ===== COPY BUILD OUTPUT =====
 # Copy các file đã biên dịch từ builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # ===== COPY ENTRYPOINT SCRIPT =====
 COPY entrypoint.sh ./

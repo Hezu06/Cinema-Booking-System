@@ -17,11 +17,10 @@ services:
       - mysql_data:/var/lib/mysql
 
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      start_period: 30s
-      retries: 10
+      retries: 5
 
     networks:
       - cbs-network
@@ -36,14 +35,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: mysql://cbs:cbs_password@mysql:3306/cinema_booking
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: cbs
-      DB_PASSWORD: cbs_password
-      DB_NAME: cinema_booking
       PORT: 5000
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
 
     ports:
       - "5000:5000"
