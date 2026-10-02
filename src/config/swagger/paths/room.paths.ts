@@ -81,7 +81,7 @@ export const roomPaths = {
         "Tạo Room mới",
 
       description:
-        "Room phải tham chiếu tới một Cinema tồn tại và tên Room phải duy nhất trong phạm vi Cinema.",
+        "Tạo phòng chiếu mới. Lưu ý: cinemaId phải là UUID của một Rạp đang tồn tại trong hệ thống (lấy từ GET /api/cinemas) và tên Room phải duy nhất trong phạm vi Rạp đó.",
 
       security: [
         {
@@ -161,7 +161,7 @@ export const roomPaths = {
 
         404: {
           description:
-            "Cinema được tham chiếu không tồn tại",
+            "Rạp chiếu (cinemaId) được tham chiếu không tồn tại trong hệ thống",
 
           content: {
             "application/json": {
