@@ -28,7 +28,7 @@ export class RoomService {
 
     if (!cinema) {
       throw new Error(
-        "Rạp chiếu phim không tồn tại trong hệ thống",
+        "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
       );
     }
 
@@ -42,7 +42,7 @@ export class RoomService {
 
     if (existingRoom) {
       throw new Error(
-        `Phòng '${trimmedName}' đã tồn tại trong rạp chiếu phim này`,
+        `Phòng '${trimmedName}' đã tồn tại trong rạp này`,
       );
     }
 
@@ -81,7 +81,7 @@ export class RoomService {
 
     if (!cinema) {
       throw new Error(
-        "Rạp chiếu phim không tồn tại trong hệ thống",
+        "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
       );
     }
 
@@ -97,7 +97,7 @@ export class RoomService {
 
       if (conflictRoom && conflictRoom.id !== id) {
         throw new Error(
-          `Phòng '${targetName}' đã tồn tại trong rạp chiếu phim này`,
+          `Phòng '${targetName}' đã tồn tại trong rạp này`,
         );
       }
     }

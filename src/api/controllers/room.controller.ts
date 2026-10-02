@@ -109,7 +109,7 @@ export class RoomController {
       if (
         error instanceof Error &&
         error.message ===
-          "Rạp chiếu phim không tồn tại trong hệ thống"
+          "Rạp chiếu (cinemaId) không tồn tại trong hệ thống"
       ) {
         return response.status(404).json({
           success: false,
@@ -120,7 +120,7 @@ export class RoomController {
       if (
         error instanceof Error &&
         error.message.includes(
-          "đã tồn tại trong rạp chiếu phim này",
+          "đã tồn tại trong rạp",
         )
       ) {
         return response.status(409).json({
@@ -138,7 +138,7 @@ export class RoomController {
           return response.status(409).json({
             success: false,
             message:
-              "Phòng với tên này đã tồn tại trong rạp chiếu phim",
+              "Phòng với tên này đã tồn tại trong rạp chiếu",
           });
         }
 
@@ -147,7 +147,7 @@ export class RoomController {
           return response.status(404).json({
             success: false,
             message:
-              "Rạp chiếu phim không tồn tại trong hệ thống",
+              "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
           });
         }
       }
@@ -211,7 +211,7 @@ export class RoomController {
       if (
         error instanceof Error &&
         error.message ===
-          "Rạp chiếu phim không tồn tại trong hệ thống"
+          "Rạp chiếu (cinemaId) không tồn tại trong hệ thống"
       ) {
         return response.status(404).json({
           success: false,
@@ -222,7 +222,7 @@ export class RoomController {
       if (
         error instanceof Error &&
         error.message.includes(
-          "đã tồn tại trong rạp chiếu phim này",
+          "đã tồn tại trong rạp",
         )
       ) {
         return response.status(409).json({
@@ -240,7 +240,7 @@ export class RoomController {
           return response.status(409).json({
             success: false,
             message:
-              "Phòng với tên này đã tồn tại trong rạp chiếu phim",
+              "Phòng với tên này đã tồn tại trong rạp chiếu",
           });
         }
 
@@ -248,7 +248,7 @@ export class RoomController {
           return response.status(404).json({
             success: false,
             message:
-              "Rạp chiếu phim không tồn tại trong hệ thống",
+              "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
           });
         }
       }

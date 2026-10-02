@@ -13,11 +13,15 @@ export const roomTypeSchema = z.enum([
 
 export const createRoomSchema = z.object({
   cinemaId: z
-    .string()
-    .uuid("ID rạp chiếu phim phải có định dạng UUID hợp lệ"),
+    .string({
+      message: "cinemaId is required",
+    })
+    .uuid("ID rạp (cinemaId) phải có định dạng UUID hợp lệ"),
 
   name: z
-    .string()
+    .string({
+      message: "name is required",
+    })
     .trim()
     .min(1, "name is required and must not be empty"),
 
@@ -25,10 +29,10 @@ export const createRoomSchema = z.object({
 
   capacity: z
     .number({
-      message: "capacity is required and must be a positive number",
+      message: "capacity is required and must be a positive integer",
     })
     .int("capacity must be an integer")
-    .positive("capacity must be a positive number"),
+    .positive("capacity must be a positive integer"),
 });
 
 export type CreateRoomInput =
@@ -43,7 +47,7 @@ export type UpdateRoomInput =
 export const roomIdParamSchema = z.object({
   id: z
     .string()
-    .uuid("ID phòng chiếu phải có định dạng UUID hợp lệ"),
+    .uuid("ID phòng (id) phải có định dạng UUID hợp lệ"),
 });
 
 export type RoomIdParam =
