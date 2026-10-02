@@ -21,6 +21,8 @@ model User {
   role         UserRole   @default(CUSTOMER)
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
+
+  heldShowtimeSeats ShowtimeSeat[] @relation("HeldShowtimeSeats")
 }
 
 enum UserRole {
@@ -43,6 +45,8 @@ model Movie {
   posterUrl       String
   status          MovieStatus @default(COMING_SOON)
 
+  showtimes Showtime[]
+
   @@unique([title, releaseDate])
 }
 
@@ -57,6 +61,24 @@ enum RoomType {
   VIP
   IMAX
   THREE_D
+}
+
+enum SeatType {
+  STANDARD
+  VIP
+  COUPLE
+}
+
+enum ShowtimeStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum ShowtimeSeatStatus {
+  AVAILABLE
+  HELD
+  BOOKED
 }
 
 model Cinema {
@@ -82,8 +104,71 @@ model Room {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   cinema Cinema @relation(fields: [cinemaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  seats Seat[]
+  showtimes Showtime[]
 
   @@unique([cinemaId, name])
   @@index([cinemaId])
   @@map("rooms")
+}
+
+model Seat {
+  id         String   @id @default(uuid())
+  roomId     String   @map("room_id")
+  rowLabel   String   @map("row_label")
+  seatNumber Int      @map("seat_number")
+  type       SeatType
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  showtimeSeats ShowtimeSeat[]
+
+  @@unique([roomId, rowLabel, seatNumber])
+  @@index([roomId])
+  @@map("seats")
+}
+
+model Showtime {
+  id        String         @id @default(uuid())
+  movieId   String         @map("movie_id")
+  roomId    String         @map("room_id")
+  startTime DateTime       @map("start_time")
+  endTime   DateTime       @map("end_time")
+  basePrice Decimal        @db.Decimal(10, 2) @map("base_price")
+  status    ShowtimeStatus @default(SCHEDULED)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  movie         Movie          @relation(fields: [movieId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  room          Room           @relation(fields: [roomId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  showtimeSeats ShowtimeSeat[]
+
+  @@index([movieId])
+  @@index([roomId])
+  @@index([startTime])
+  @@map("showtimes")
+}
+
+model ShowtimeSeat {
+  id            String             @id @default(uuid())
+  showtimeId    String             @map("showtime_id")
+  seatId        String             @map("seat_id")
+  status        ShowtimeSeatStatus @default(AVAILABLE)
+  price         Decimal            @db.Decimal(10, 2)
+  heldByUserId  String?            @map("held_by_user_id")
+  holdExpiresAt DateTime?          @map("hold_expires_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  showtime  Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  heldByUser User?   @relation("HeldShowtimeSeats", fields: [heldByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([showtimeId, seatId])
+  @@index([seatId])
+  @@index([status])
+  @@index([heldByUserId])
+  @@map("showtime_seats")
 }

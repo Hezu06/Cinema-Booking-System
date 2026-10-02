@@ -54,16 +54,25 @@ export async function authMiddleware(
         });
     }
 
+    let payload: string | JwtPayload;
+
     try {
-        const payload = jwt.verify(token, secret);
+        payload = jwt.verify(token, secret);
+    } catch {
+        return res.status(401).json({
+            success: false,
+            message: "Token không hợp lệ hoặc đã hết hạn",
+        });
+    }
 
-        if (!isAuthTokenPayload(payload)) {
-            return res.status(401).json({
-                success: false,
-                message: "Token không hợp lệ",
-            });
-        }
+    if (!isAuthTokenPayload(payload)) {
+        return res.status(401).json({
+            success: false,
+            message: "Token không hợp lệ",
+        });
+    }
 
+    try {
         const user = await userRepository.findById(payload.userId);
 
         if (!user) {
@@ -86,10 +95,15 @@ export async function authMiddleware(
         };
 
         return next();
-    } catch {
-        return res.status(401).json({
+    } catch (error) {
+        console.error("Authentication database lookup failed:", error);
+
+        return res.status(503).json({
             success: false,
-            message: "Token không hợp lệ hoặc đã hết hạn",
+            message: "Không thể kết nối cơ sở dữ liệu xác thực",
+            ...(process.env.NODE_ENV !== "production" && error instanceof Error
+                ? { details: error.message }
+                : {}),
         });
     }
 }
