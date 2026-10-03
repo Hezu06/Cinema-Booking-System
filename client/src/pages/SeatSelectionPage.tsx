@@ -22,6 +22,69 @@ export const SeatSelectionPage: React.FC = () => {
   const [userHoldExpiresAt, setUserHoldExpiresAt] = useState<Date | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
 
+  // Background silent sync of seat map
+  const syncSeats = async () => {
+    if (!showtimeId) return;
+    try {
+      const seatsRes = await api.getShowtimeSeats(showtimeId);
+      if (seatsRes.success && seatsRes.data) {
+        const loadedSeats: ShowtimeSeat[] = seatsRes.data;
+        setSeats(loadedSeats);
+
+        // Check if any seat currently in selectedSeatIds was held or booked by someone else
+        setSelectedSeatIds((prevSelected) => {
+          const now = new Date();
+          return prevSelected.filter((seatId) => {
+            const currentSeat = loadedSeats.find((s) => s.id === seatId);
+            if (!currentSeat) return false;
+            if (currentSeat.status === 'BOOKED') {
+              setError(`Ghế ${currentSeat.seat.rowLabel}${currentSeat.seat.seatNumber} vừa được khách hàng khác đặt mua.`);
+              return false;
+            }
+            const isHoldActive = !!currentSeat.holdExpiresAt && new Date(currentSeat.holdExpiresAt) > now;
+            const isHeldByOther =
+              currentSeat.status === 'HELD' &&
+              isHoldActive &&
+              (!user || currentSeat.heldByUserId !== user.id);
+            if (isHeldByOther) {
+              setError(`Ghế ${currentSeat.seat.rowLabel}${currentSeat.seat.seatNumber} vừa có khách hàng khác tạm giữ.`);
+              return false;
+            }
+            return true;
+          });
+        });
+
+        // Check if current user already has active held seats for this showtime
+        if (user) {
+          const now = new Date();
+          const myHeld = loadedSeats.filter(
+            (s) =>
+              s.status === 'HELD' &&
+              s.heldByUserId === user.id &&
+              s.holdExpiresAt &&
+              new Date(s.holdExpiresAt) > now
+          );
+
+          if (myHeld.length > 0) {
+            const expires = myHeld.reduce((earliest, s) => {
+              const d = new Date(s.holdExpiresAt!);
+              return !earliest || d < earliest ? d : earliest;
+            }, null as Date | null);
+
+            if (expires) {
+              setUserHoldExpiresAt(expires);
+              setRemainingSeconds(Math.max(0, Math.floor((expires.getTime() - Date.now()) / 1000)));
+            }
+          } else {
+            setUserHoldExpiresAt(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync seats in background:', err);
+    }
+  };
+
   const fetchShowtimeAndSeats = () => {
     if (!showtimeId) return;
     setIsLoading(true);
@@ -37,7 +100,6 @@ export const SeatSelectionPage: React.FC = () => {
           const loadedSeats: ShowtimeSeat[] = seatsRes.data;
           setSeats(loadedSeats);
 
-          // Check if current user already has active held seats for this showtime
           if (user) {
             const now = new Date();
             const myHeld = loadedSeats.filter(
@@ -52,7 +114,6 @@ export const SeatSelectionPage: React.FC = () => {
               const myHeldIds = myHeld.map((s) => s.id);
               setSelectedSeatIds((prev) => (prev.length === 0 ? myHeldIds : prev));
 
-              // Determine earliest expiration date
               const expires = myHeld.reduce((earliest, s) => {
                 const d = new Date(s.holdExpiresAt!);
                 return !earliest || d < earliest ? d : earliest;
@@ -75,6 +136,28 @@ export const SeatSelectionPage: React.FC = () => {
 
   useEffect(() => {
     fetchShowtimeAndSeats();
+
+    // Auto-refresh seat diagram every 3.5 seconds in background
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncSeats();
+      }
+    }, 3500);
+
+    // Refresh immediately on tab focus
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        syncSeats();
+      }
+    };
+    window.addEventListener('visibilitychange', handleFocus);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('visibilitychange', handleFocus);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [showtimeId, user]);
 
   // Countdown timer for active user hold
