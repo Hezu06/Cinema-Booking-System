@@ -23,6 +23,7 @@ model User {
   createdAt    DateTime   @default(now())
 
   heldShowtimeSeats ShowtimeSeat[] @relation("HeldShowtimeSeats")
+  bookings          Booking[]
 }
 
 enum UserRole {
@@ -144,6 +145,7 @@ model Showtime {
   movie         Movie          @relation(fields: [movieId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   room          Room           @relation(fields: [roomId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   showtimeSeats ShowtimeSeat[]
+  bookings      Booking[]
 
   @@index([movieId])
   @@index([roomId])
@@ -162,13 +164,81 @@ model ShowtimeSeat {
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @updatedAt @map("updated_at")
 
-  showtime  Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  heldByUser User?   @relation("HeldShowtimeSeats", fields: [heldByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  showtime     Showtime      @relation(fields: [showtimeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  seat         Seat          @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  heldByUser   User?         @relation("HeldShowtimeSeats", fields: [heldByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  bookingSeats BookingSeat[]
 
   @@unique([showtimeId, seatId])
   @@index([seatId])
   @@index([status])
   @@index([heldByUserId])
   @@map("showtime_seats")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  showtimeId  String        @map("showtime_id")
+  bookingCode String        @unique @map("booking_code")
+  totalAmount Decimal       @db.Decimal(10, 2) @map("total_amount")
+  status      BookingStatus @default(CONFIRMED)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  showtime     Showtime      @relation(fields: [showtimeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  bookingSeats BookingSeat[]
+  tickets      Ticket[]
+
+  @@index([userId])
+  @@index([showtimeId])
+  @@index([status])
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id             String   @id @default(uuid())
+  bookingId      String   @map("booking_id")
+  showtimeSeatId String   @map("showtime_seat_id")
+  price          Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  booking      Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  showtimeSeat ShowtimeSeat @relation(fields: [showtimeSeatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ticket       Ticket?
+
+  @@unique([bookingId, showtimeSeatId])
+  @@index([showtimeSeatId])
+  @@map("booking_seats")
+}
+
+model Ticket {
+  id            String       @id @default(uuid())
+  bookingId     String       @map("booking_id")
+  bookingSeatId String       @unique @map("booking_seat_id")
+  ticketCode    String       @unique @map("ticket_code")
+  qrCode        String?      @db.Text @map("qr_code")
+  status        TicketStatus @default(VALID)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  booking     Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bookingSeat BookingSeat @relation(fields: [bookingSeatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([bookingId])
+  @@map("tickets")
 }

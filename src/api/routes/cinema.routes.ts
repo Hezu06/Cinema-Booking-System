@@ -37,22 +37,18 @@ const cinemaController =
   );
 
 /*
- * UC-11 Manage Cinemas
+ * UC-11 Manage Cinemas & Browse Cinemas
  *
- * Cinema management is Admin-only.
+ * Cinema browsing is public; management (create/update/delete) is Admin-only.
  */
 
 cinemaRouter.get(
   "/",
-  authMiddleware,
-  requireAdmin,
   cinemaController.getAllCinemas
 );
 
 cinemaRouter.get(
   "/:id",
-  authMiddleware,
-  requireAdmin,
   cinemaController.getCinemaById
 );
 

@@ -8,6 +8,7 @@ import cinemaRouter from "./api/routes/cinema.routes.js";
 import roomRouter from "./api/routes/room.routes.js";
 import seatRouter from "./api/routes/seat.routes.js";
 import showtimeRouter from "./api/routes/showtime.routes.js";
+import bookingRouter from "./api/routes/booking.routes.js";
 
 import {
   setupSwagger,
@@ -40,5 +41,6 @@ app.use("/api/cinema", cinemaRouter);
 app.use("/api/rooms", roomRouter);
 app.use("/api/seats", seatRouter);
 app.use("/api/showtimes", showtimeRouter);
+app.use("/api/bookings", bookingRouter);
 
 export default app;
