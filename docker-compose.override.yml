@@ -24,7 +24,7 @@ services:
       - ./prisma:/app/prisma
       - ./generated:/app/generated
 
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
 
   mysql:
     environment:
