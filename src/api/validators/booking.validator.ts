@@ -17,6 +17,22 @@ export const createBookingSchema = z.object({
     .max(8, "Cannot book more than 8 seats per booking"),
 });
 
+export const holdSeatsSchema = z.object({
+  showtimeId: uuidSchema,
+  showtimeSeatIds: z
+    .array(uuidSchema, {
+      message: "showtimeSeatIds must be an array of seat UUIDs",
+    })
+    .min(1, "At least one seat must be selected")
+    .max(8, "Cannot hold more than 8 seats per booking"),
+  durationMinutes: z.number().int().min(1).max(30).optional(),
+});
+
+export const releaseSeatsSchema = z.object({
+  showtimeId: uuidSchema,
+  showtimeSeatIds: z.array(uuidSchema).optional(),
+});
+
 export const bookingQuerySchema = z.object({
   userId: uuidSchema.optional(),
   showtimeId: uuidSchema.optional(),

@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test:concurrency": "tsx scripts/test-concurrency.ts",
+    "client:dev": "npm run dev --prefix client",
+    "client:build": "npm run build --prefix client"
   },
   "repository": {
     "type": "git",
@@ -49,6 +53,9 @@
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.6.5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "allowScripts": {
     "@prisma/engines@7.10.0": true,

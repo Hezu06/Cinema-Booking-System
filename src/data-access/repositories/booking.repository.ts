@@ -4,6 +4,9 @@ import type {
   BookingFilters,
   BookingRepository,
   CreateBookingData,
+  HoldSeatsData,
+  HoldSeatsResult,
+  ReleaseSeatsData,
 } from "../../business/interfaces/booking.interface.js";
 import type {
   BookingDetail,
@@ -156,12 +159,25 @@ export class PrismaBookingRepository implements BookingRepository {
           throw new Error("SOME_SEATS_NOT_FOUND");
         }
 
-        // Check if all seats are active and available
-        const inactiveOrUnavailable = showtimeSeats.filter(
-          (s) => !s.seat.active || s.status !== "AVAILABLE",
-        );
-        if (inactiveOrUnavailable.length > 0) {
-          throw new Error("SEATS_ALREADY_BOOKED");
+        const now = new Date();
+
+        // Check if all seats are active and not booked or held by other users
+        for (const s of showtimeSeats) {
+          if (!s.seat.active) {
+            throw new Error("SOME_SEATS_NOT_FOUND");
+          }
+          if (s.status === "BOOKED") {
+            throw new Error("SEATS_ALREADY_BOOKED");
+          }
+          if (
+            s.status === "HELD" &&
+            s.heldByUserId &&
+            s.heldByUserId !== data.userId &&
+            s.holdExpiresAt &&
+            s.holdExpiresAt > now
+          ) {
+            throw new Error("SEATS_HELD_BY_ANOTHER_USER");
+          }
         }
 
         // 3. Atomically lock & mark seats as BOOKED (concurrency safety)
@@ -169,7 +185,18 @@ export class PrismaBookingRepository implements BookingRepository {
         const updateResult = await tx.showtimeSeat.updateMany({
           where: {
             id: { in: actualShowtimeSeatIds },
-            status: "AVAILABLE",
+            OR: [
+              { status: "AVAILABLE" },
+              {
+                status: "HELD",
+                heldByUserId: data.userId,
+                holdExpiresAt: { gt: now },
+              },
+              {
+                status: "HELD",
+                holdExpiresAt: { lte: now },
+              },
+            ],
           },
           data: {
             status: "BOOKED",
@@ -243,6 +270,130 @@ export class PrismaBookingRepository implements BookingRepository {
     );
 
     return mapBookingDetail(raw);
+  }
+
+  async holdSeats(data: HoldSeatsData, expiresAt: Date): Promise<HoldSeatsResult> {
+    return prisma.$transaction(
+      async (tx) => {
+        const now = new Date();
+
+        // 1. Verify showtime exists and is SCHEDULED
+        const showtime = await tx.showtime.findUnique({
+          where: { id: data.showtimeId },
+        });
+        if (!showtime) throw new Error("SHOWTIME_NOT_FOUND");
+        if (showtime.status !== "SCHEDULED") throw new Error("SHOWTIME_NOT_AVAILABLE");
+        if (now >= showtime.startTime) throw new Error("SHOWTIME_ALREADY_STARTED");
+
+        // 2. Query requested showtime seats
+        const showtimeSeats = await tx.showtimeSeat.findMany({
+          where: {
+            OR: [
+              { id: { in: data.showtimeSeatIds } },
+              { seatId: { in: data.showtimeSeatIds } },
+            ],
+            showtimeId: data.showtimeId,
+          },
+          include: { seat: true },
+        });
+
+        if (showtimeSeats.length !== data.showtimeSeatIds.length) {
+          throw new Error("SOME_SEATS_NOT_FOUND");
+        }
+
+        const actualShowtimeSeatIds = showtimeSeats.map((s) => s.id);
+
+        // 3. Check seat status conflicts
+        for (const s of showtimeSeats) {
+          if (!s.seat.active) {
+            throw new Error("SOME_SEATS_NOT_FOUND");
+          }
+          if (s.status === "BOOKED") {
+            throw new Error("SEATS_ALREADY_BOOKED");
+          }
+          if (
+            s.status === "HELD" &&
+            s.heldByUserId &&
+            s.heldByUserId !== data.userId &&
+            s.holdExpiresAt &&
+            s.holdExpiresAt > now
+          ) {
+            throw new Error("SEATS_HELD_BY_ANOTHER_USER");
+          }
+        }
+
+        // 4. Release any seats previously held by this user for this showtime that are no longer in this hold
+        await tx.showtimeSeat.updateMany({
+          where: {
+            showtimeId: data.showtimeId,
+            heldByUserId: data.userId,
+            id: { notIn: actualShowtimeSeatIds },
+            status: "HELD",
+          },
+          data: {
+            status: "AVAILABLE",
+            heldByUserId: null,
+            holdExpiresAt: null,
+          },
+        });
+
+        // 5. Atomically update the requested seats to HELD
+        const updateResult = await tx.showtimeSeat.updateMany({
+          where: {
+            id: { in: actualShowtimeSeatIds },
+            OR: [
+              { status: "AVAILABLE" },
+              { status: "HELD", heldByUserId: data.userId },
+              { status: "HELD", holdExpiresAt: { lte: now } },
+            ],
+          },
+          data: {
+            status: "HELD",
+            heldByUserId: data.userId,
+            holdExpiresAt: expiresAt,
+          },
+        });
+
+        if (updateResult.count !== actualShowtimeSeatIds.length) {
+          throw new Error("SEATS_HELD_BY_ANOTHER_USER");
+        }
+
+        return {
+          showtimeId: data.showtimeId,
+          heldSeatIds: actualShowtimeSeatIds,
+          holdExpiresAt: expiresAt,
+          expiresInSeconds: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+        };
+      },
+      {
+        maxWait: 10000,
+        timeout: 25000,
+      },
+    );
+  }
+
+  async releaseSeats(data: ReleaseSeatsData): Promise<number> {
+    const result = await prisma.showtimeSeat.updateMany({
+      where: {
+        showtimeId: data.showtimeId,
+        heldByUserId: data.userId,
+        status: "HELD",
+        ...(data.showtimeSeatIds && data.showtimeSeatIds.length > 0
+          ? {
+              OR: [
+                { id: { in: data.showtimeSeatIds } },
+                { seatId: { in: data.showtimeSeatIds } },
+              ],
+            }
+          : {}),
+      },
+      data: {
+        status: "AVAILABLE",
+        heldByUserId: null,
+        holdExpiresAt: null,
+      },
+    });
+    return result.count;
   }
 
   async findById(id: string): Promise<BookingDetail | null> {

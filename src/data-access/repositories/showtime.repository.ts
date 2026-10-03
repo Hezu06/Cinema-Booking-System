@@ -7,10 +7,30 @@ import type {
 } from "../../business/interfaces/showtime.interface.js";
 import type { Showtime, ShowtimeSeatView } from "../../business/models/showtime.model.js";
 
-type PrismaShowtime = Awaited<ReturnType<typeof prisma.showtime.findFirst>>;
+const showtimeInclude = {
+  movie: true,
+  room: {
+    include: {
+      cinema: true,
+    },
+  },
+} as const;
 
-function mapShowtime(showtime: NonNullable<PrismaShowtime>): Showtime {
-  return { ...showtime, basePrice: Number(showtime.basePrice) };
+type BasePrismaShowtime = NonNullable<Awaited<ReturnType<typeof prisma.showtime.findFirst>>>;
+
+type PopulatedPrismaShowtime = BasePrismaShowtime & {
+  movie?: any;
+  room?: any;
+};
+
+function mapShowtime(showtime: PopulatedPrismaShowtime): Showtime {
+  const { movie, room, ...rest } = showtime;
+  return {
+    ...rest,
+    basePrice: Number(showtime.basePrice),
+    ...(movie ? { movie } : {}),
+    ...(room ? { room } : {}),
+  };
 }
 
 export class PrismaShowtimeRepository implements ShowtimeRepository {
@@ -26,13 +46,17 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
           ? { startTime: { gte: filters.date, lt: nextDay } }
           : {}),
       },
+      include: showtimeInclude,
       orderBy: { startTime: "asc" },
     });
     return showtimes.map(mapShowtime);
   }
 
   async findById(id: string): Promise<Showtime | null> {
-    const showtime = await prisma.showtime.findUnique({ where: { id } });
+    const showtime = await prisma.showtime.findUnique({
+      where: { id },
+      include: showtimeInclude,
+    });
     return showtime ? mapShowtime(showtime) : null;
   }
 
@@ -50,6 +74,21 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
   }
 
   async findSeats(showtimeId: string): Promise<ShowtimeSeatView[]> {
+    const now = new Date();
+    // Opportunistically release expired held seats for this showtime
+    await prisma.showtimeSeat.updateMany({
+      where: {
+        showtimeId,
+        status: "HELD",
+        holdExpiresAt: { lte: now },
+      },
+      data: {
+        status: "AVAILABLE",
+        heldByUserId: null,
+        holdExpiresAt: null,
+      },
+    });
+
     const seats = await prisma.showtimeSeat.findMany({
       where: { showtimeId, seat: { active: true } },
       include: { seat: true },

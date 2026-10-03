@@ -2,6 +2,9 @@ import type {
   BookingFilters,
   BookingRepository,
   CreateBookingData,
+  HoldSeatsData,
+  HoldSeatsResult,
+  ReleaseSeatsData,
 } from "../interfaces/booking.interface.js";
 import type { BookingDetail } from "../models/booking.model.js";
 
@@ -13,6 +16,52 @@ function generateBookingCode(): string {
 
 export class BookingService {
   constructor(private readonly bookingRepository: BookingRepository) {}
+
+  async holdSeats(
+    userId: string,
+    data: { showtimeId: string; showtimeSeatIds: string[]; durationMinutes?: number | undefined },
+  ): Promise<HoldSeatsResult> {
+    const seatIds = data.showtimeSeatIds;
+
+    if (!seatIds || seatIds.length === 0) {
+      throw new Error("NO_SEATS_SPECIFIED");
+    }
+
+    const uniqueSeatIds = new Set(seatIds);
+    if (uniqueSeatIds.size !== seatIds.length) {
+      throw new Error("DUPLICATE_SEATS_IN_REQUEST");
+    }
+
+    if (seatIds.length > 8) {
+      throw new Error("MAX_SEATS_EXCEEDED");
+    }
+
+    const duration = data.durationMinutes && data.durationMinutes > 0 ? data.durationMinutes : 10;
+    const expiresAt = new Date(Date.now() + duration * 60 * 1000);
+
+    const holdData: HoldSeatsData = {
+      userId,
+      showtimeId: data.showtimeId,
+      showtimeSeatIds: seatIds,
+      durationMinutes: duration,
+    };
+
+    return this.bookingRepository.holdSeats(holdData, expiresAt);
+  }
+
+  async releaseSeats(
+    userId: string,
+    data: { showtimeId: string; showtimeSeatIds?: string[] | undefined },
+  ): Promise<{ releasedCount: number }> {
+    const releaseData: ReleaseSeatsData = {
+      userId,
+      showtimeId: data.showtimeId,
+      showtimeSeatIds: data.showtimeSeatIds,
+    };
+
+    const count = await this.bookingRepository.releaseSeats(releaseData);
+    return { releasedCount: count };
+  }
 
   async createBooking(
     userId: string,

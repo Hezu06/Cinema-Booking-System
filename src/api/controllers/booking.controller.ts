@@ -5,6 +5,8 @@ import {
   bookingIdParamSchema,
   bookingQuerySchema,
   createBookingSchema,
+  holdSeatsSchema,
+  releaseSeatsSchema,
 } from "../validators/booking.validator.js";
 
 function handleBookingError(error: unknown, response: Response): boolean {
@@ -46,6 +48,27 @@ function handleBookingError(error: unknown, response: Response): boolean {
       });
       return true;
 
+    case "SEATS_HELD_BY_ANOTHER_USER":
+      response.status(409).json({
+        success: false,
+        message: "Một hoặc nhiều ghế đang được khách hàng khác tạm giữ",
+      });
+      return true;
+
+    case "HOLD_EXPIRED":
+      response.status(409).json({
+        success: false,
+        message: "Thời gian giữ ghế đã hết hạn, vui lòng chọn lại ghế",
+      });
+      return true;
+
+    case "NO_SEATS_SPECIFIED":
+      response.status(400).json({
+        success: false,
+        message: "Vui lòng chọn ít nhất 1 ghế",
+      });
+      return true;
+
     case "DUPLICATE_SEATS_IN_REQUEST":
       response.status(400).json({
         success: false,
@@ -81,6 +104,72 @@ function handleBookingError(error: unknown, response: Response): boolean {
 
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
+
+  holdSeats = async (request: Request, response: Response) => {
+    const user = (request as AuthenticatedRequest).user;
+    const bodyResult = holdSeatsSchema.safeParse(request.body);
+    if (!bodyResult.success) {
+      return response.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: bodyResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await this.bookingService.holdSeats(
+        user.userId,
+        bodyResult.data,
+      );
+
+      return response.status(200).json({
+        success: true,
+        message: "Seats held successfully",
+        data: result,
+      });
+    } catch (error) {
+      if (handleBookingError(error, response)) return;
+
+      console.error("Error holding seats:", error);
+      return response.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  };
+
+  releaseSeats = async (request: Request, response: Response) => {
+    const user = (request as AuthenticatedRequest).user;
+    const bodyResult = releaseSeatsSchema.safeParse(request.body);
+    if (!bodyResult.success) {
+      return response.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: bodyResult.error.issues,
+      });
+    }
+
+    try {
+      const result = await this.bookingService.releaseSeats(
+        user.userId,
+        bodyResult.data,
+      );
+
+      return response.status(200).json({
+        success: true,
+        message: "Seats released successfully",
+        data: result,
+      });
+    } catch (error) {
+      if (handleBookingError(error, response)) return;
+
+      console.error("Error releasing seats:", error);
+      return response.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  };
 
   createBooking = async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;

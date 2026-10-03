@@ -14,6 +14,8 @@ const bookingController = new BookingController(bookingService);
 bookingRouter.use(authMiddleware);
 
 // Customer & Admin endpoints
+bookingRouter.post("/hold", bookingController.holdSeats);
+bookingRouter.post("/release", bookingController.releaseSeats);
 bookingRouter.post("/", bookingController.createBooking);
 bookingRouter.get("/my-bookings", bookingController.getMyBookings);
 bookingRouter.get("/:id", bookingController.getBookingById);
