@@ -140,10 +140,13 @@ export class PrismaBookingRepository implements BookingRepository {
         if (showtime.status !== "SCHEDULED") throw new Error("SHOWTIME_NOT_AVAILABLE");
         if (new Date() >= showtime.startTime) throw new Error("SHOWTIME_ALREADY_STARTED");
 
-        // 2. Query requested showtime seats
+        // 2. Query requested showtime seats (supports either ShowtimeSeat ID or physical Seat ID)
         const showtimeSeats = await tx.showtimeSeat.findMany({
           where: {
-            id: { in: data.showtimeSeatIds },
+            OR: [
+              { id: { in: data.showtimeSeatIds } },
+              { seatId: { in: data.showtimeSeatIds } },
+            ],
             showtimeId: data.showtimeId,
           },
           include: { seat: true },
@@ -162,9 +165,10 @@ export class PrismaBookingRepository implements BookingRepository {
         }
 
         // 3. Atomically lock & mark seats as BOOKED (concurrency safety)
+        const actualShowtimeSeatIds = showtimeSeats.map((s) => s.id);
         const updateResult = await tx.showtimeSeat.updateMany({
           where: {
-            id: { in: data.showtimeSeatIds },
+            id: { in: actualShowtimeSeatIds },
             status: "AVAILABLE",
           },
           data: {
@@ -174,7 +178,7 @@ export class PrismaBookingRepository implements BookingRepository {
           },
         });
 
-        if (updateResult.count !== data.showtimeSeatIds.length) {
+        if (updateResult.count !== actualShowtimeSeatIds.length) {
           throw new Error("SEATS_ALREADY_BOOKED");
         }
 
