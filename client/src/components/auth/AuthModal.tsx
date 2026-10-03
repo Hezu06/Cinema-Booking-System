@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { TicketorLogo } from '../layout/TicketorLogo';
 
@@ -13,6 +13,8 @@ export const AuthModal: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (!isAuthModalOpen) return null;
 
@@ -51,7 +53,11 @@ export const AuthModal: React.FC = () => {
       <div className="relative w-full max-w-4xl bg-[#101016] border border-[#262636] rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
         {/* Close Button */}
         <button
-          onClick={closeAuthModal}
+          onClick={() => {
+            setShowPassword(false);
+            setShowConfirmPassword(false);
+            closeAuthModal();
+          }}
           className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-white hover:text-black flex items-center justify-center text-[#8E8E9E] transition"
         >
           <X size={16} />
@@ -109,27 +115,47 @@ export const AuthModal: React.FC = () => {
 
               <div>
                 <label className="block text-[11px] text-[#8E8E9E] mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {authModalMode === 'register' && (
                 <div>
                   <label className="block text-[11px] text-[#8E8E9E] mb-1">Confirm Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -214,7 +240,11 @@ export const AuthModal: React.FC = () => {
                 Don't have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => openAuthModal('register')}
+                  onClick={() => {
+                    setShowPassword(false);
+                    setShowConfirmPassword(false);
+                    openAuthModal('register');
+                  }}
                   className="text-white hover:text-[#FCFC65] font-semibold underline"
                 >
                   Sign Up
@@ -225,7 +255,11 @@ export const AuthModal: React.FC = () => {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => openAuthModal('login')}
+                  onClick={() => {
+                    setShowPassword(false);
+                    setShowConfirmPassword(false);
+                    openAuthModal('login');
+                  }}
                   className="text-white hover:text-[#FCFC65] font-semibold underline"
                 >
                   Sign In

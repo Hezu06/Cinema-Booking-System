@@ -6,13 +6,13 @@ import { api } from '../api/client';
 import { MovieCard } from '../components/movies/MovieCard';
 
 const movieBackdrops: Record<string, string> = {
-  'Dune: Hành Tinh Cát - Phần Hai': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1920&auto=format&fit=crop&q=80',
-  'Godzilla x Kong: Đế Chế Mới': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1920&auto=format&fit=crop&q=80',
-  'Kung Fu Panda 4': 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1920&auto=format&fit=crop&q=80',
-  'Oppenheimer': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&auto=format&fit=crop&q=80',
-  'Inception': 'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=1920&auto=format&fit=crop&q=80',
-  'Deadpool & Wolverine': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&auto=format&fit=crop&q=80',
-  'Avatar: Lửa và Tro Tàn': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1920&auto=format&fit=crop&q=80',
+  'Dune: Hành Tinh Cát - Phần Hai': 'https://image.tmdb.org/t/p/original/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
+  'Godzilla x Kong: Đế Chế Mới': 'https://image.tmdb.org/t/p/original/tMefBSflR6PGQLv7WvFPpKLZkyk.jpg',
+  'Kung Fu Panda 4': 'https://image.tmdb.org/t/p/original/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg',
+  'Oppenheimer': 'https://image.tmdb.org/t/p/original/rLb2cwF3Pazuxaj0sRXQ037tGI1.jpg',
+  'Inception': 'https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
+  'Deadpool & Wolverine': 'https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
+  'Avatar: Lửa và Tro Tàn': 'https://image.tmdb.org/t/p/original/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',
 };
 
 export const HomePage: React.FC = () => {
