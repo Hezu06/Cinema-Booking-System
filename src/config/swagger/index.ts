@@ -22,6 +22,7 @@ import {
 } from "./schemas/room.schemas.js";
 import { seatSchemas } from "./schemas/seat.schemas.js";
 import { showtimeSchemas } from "./schemas/showtime.schemas.js";
+import { bookingSchemas } from "./schemas/booking.schemas.js";
 
 import {
   commonPaths,
@@ -44,6 +45,7 @@ import {
 } from "./paths/room.paths.js";
 import { seatPaths } from "./paths/seat.paths.js";
 import { showtimePaths } from "./paths/showtime.paths.js";
+import { bookingPaths } from "./paths/booking.paths.js";
 
 const swaggerDocument = {
   openapi: "3.0.3",
@@ -85,6 +87,7 @@ const swaggerDocument = {
     },
     { name: "Seats", description: "Seat management APIs" },
     { name: "Showtimes", description: "Showtime and availability APIs" },
+    { name: "Bookings", description: "Movie ticket booking APIs" },
   ],
 
   components: {
@@ -104,6 +107,7 @@ const swaggerDocument = {
       ...roomSchemas,
       ...seatSchemas,
       ...showtimeSchemas,
+      ...bookingSchemas,
     },
   },
 
@@ -115,6 +119,7 @@ const swaggerDocument = {
     ...roomPaths,
     ...seatPaths,
     ...showtimePaths,
+    ...bookingPaths,
   },
 };
 
