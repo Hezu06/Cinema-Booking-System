@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-4 z-50 w-full px-4 sm:px-6 pointer-events-none mb-2">
       <div className="max-w-5xl mx-auto flex items-center justify-between pointer-events-auto bg-[#0E0E14]/90 backdrop-blur-xl border border-[#262633] shadow-2xl rounded-2xl px-5 sm:px-6 py-2.5">
-        {/* Left: Ticketor Logo */}
+        {/* Left: Sọt phim Logo */}
         <Link to="/" className="flex items-center group">
           <TicketorLogo size="md" />
         </Link>

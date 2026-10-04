@@ -75,7 +75,7 @@ export const AuthModal: React.FC = () => {
               <p className="text-xs text-[#8E8E9E] mt-1">
                 {authModalMode === 'login'
                   ? 'Welcome back! Please enter your details'
-                  : 'Start your cinematic journey with Ticketor'}
+                  : 'Start your cinematic journey with Sọt phim'}
               </p>
             </div>
 
