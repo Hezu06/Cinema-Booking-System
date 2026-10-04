@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-2 space-y-4">
             <TicketorLogo size="md" />
             <p className="text-xs text-[#8E8E9E] leading-relaxed max-w-sm">
-              Ticketor is your premier digital cinema booking companion. Discover trending blockbusters, reserve best-in-house seats in real time, and enjoy unforgettable film experiences.
+              Sọt phim là nền tảng đặt vé xem phim trực tuyến hàng đầu. Khám phá các bộ phim bom tấn, đặt trước chỗ ngồi ưng ý trong thời gian thực và tận hưởng trải nghiệm điện ảnh trọn vẹn.
             </p>
 
             {/* Social Icons */}
@@ -51,7 +51,7 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="text-[11px] text-[#5A5A6E] pt-2">
-              Copyright © 2016 - 2026 Ticketor. All right reserved.
+              Copyright © 2026 Sọt phim. All rights reserved.
               <span className="mx-2">·</span>
               <a href="#privacy" className="hover:text-gray-300">Privacy Policy</a>
               <span className="mx-2">·</span>

@@ -108,7 +108,7 @@ export const HomePage: React.FC = () => {
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80",
     },
     {
-      text: "Ticketor consistently goes above and beyond my expectations. Cleanest UI in cinema booking hands down.",
+      text: "Sọt phim consistently goes above and beyond my expectations. Cleanest UI in cinema booking hands down.",
       author: "John",
       role: "Banker",
       avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100&auto=format&fit=crop&q=80",
@@ -117,16 +117,16 @@ export const HomePage: React.FC = () => {
 
   const faqs = [
     {
-      q: "What is Ticketor?",
-      a: "Ticketor is a digital cinema booking platform designed to provide a fast, seamless way to discover showtimes, pick your favorite seats in real-time, order concessions, and manage your tickets all in one sleek dashboard.",
+      q: "What is Sọt phim?",
+      a: "Sọt phim is a digital cinema booking platform designed to provide a fast, seamless way to discover showtimes, pick your favorite seats in real-time, order concessions, and manage your tickets all in one sleek dashboard.",
     },
     {
       q: "Can I modify my seat selection after booking a ticket?",
       a: "You can modify or exchange your seat reservations up to 2 hours before the movie showtime through your Profile under 'My Tickets', subject to auditorium availability.",
     },
     {
-      q: "Is my payment information secure with Ticketor?",
-      a: "Yes, Ticketor adheres strictly to PCI-DSS Level 1 compliance and uses end-to-end 256-bit encryption for all card transactions and digital wallets.",
+      q: "Is my payment information secure with Sọt phim?",
+      a: "Yes, Sọt phim adheres strictly to PCI-DSS Level 1 compliance and uses end-to-end 256-bit encryption for all card transactions and digital wallets.",
     },
     {
       q: "What if I have trouble booking tickets through the app?",
@@ -573,7 +573,7 @@ export const HomePage: React.FC = () => {
                   <div className="inline-block p-3 rounded-2xl bg-[#FCFC65]/10 border border-[#FCFC65]/30">
                     <Smartphone size={32} className="text-[#FCFC65] mx-auto" />
                   </div>
-                  <div className="font-bold text-white text-base">Ticketor Mobile</div>
+                  <div className="font-bold text-white text-base">Sọt phim Mobile</div>
                   <p className="text-[11px] text-[#8E8E9E]">
                     Scan QR codes at turnstiles, choose recliners, and preorder food in seconds.
                   </p>
@@ -590,7 +590,7 @@ export const HomePage: React.FC = () => {
             {/* Content */}
             <div className="space-y-6">
               <h3 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
-                Enjoy Ticketor Mobile <br />
+                Enjoy Sọt phim Mobile <br />
                 App Experience
               </h3>
               <p className="text-xs sm:text-sm text-[#8E8E9E] leading-relaxed">

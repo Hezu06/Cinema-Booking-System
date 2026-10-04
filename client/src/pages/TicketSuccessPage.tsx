@@ -81,7 +81,7 @@ export const TicketSuccessPage: React.FC = () => {
   };
 
   const cinema = booking?.showtime?.room?.cinema || cachedReceipt?.cinema || {
-    name: 'Hệ Thống Rạp Ticketor',
+    name: 'Hệ Thống Rạp Sọt phim',
     address: 'Hà Nội / TP. Hồ Chí Minh',
   };
 
@@ -330,7 +330,7 @@ export const TicketSuccessPage: React.FC = () => {
 
             {/* Appreciation Note */}
             <div className="text-[11px] text-[#606075] leading-relaxed pt-2">
-              Cảm ơn bạn đã lựa chọn Ticketor Cinema Booking System. Vui lòng xuất trình mã vé tại quầy hoặc cửa soát vé trước giờ chiếu 15 phút.
+              Cảm ơn bạn đã lựa chọn Sọt phim Cinema Booking System. Vui lòng xuất trình mã vé tại quầy hoặc cửa soát vé trước giờ chiếu 15 phút.
             </div>
           </div>
         </div>
