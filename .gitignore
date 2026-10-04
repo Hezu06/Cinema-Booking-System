@@ -8,3 +8,4 @@ generated/
 .agents/
 docs/
 *.pdf
+docker-compose.override.yml
