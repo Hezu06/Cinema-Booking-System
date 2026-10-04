@@ -681,17 +681,6 @@ Notebook có câu kết luận “an toàn tuyệt đối chống double-booking
 - Hai biểu đồ so sánh RPS/P95 dùng số liệu viết trực tiếp trong code, không tự tính từ toàn bộ DataFrame; nhãn đọc nhẹ ghi `/movies` nhưng bài đọc thực tế gồm cả phim và rạp. Bảng kết quả ở trên phản ánh output đầy đủ hơn.
 - Mỗi kịch bản có một output được lưu, chưa có thống kê nhiều lượt chạy hoặc phân tích tài nguyên server. Thứ tự cell trong notebook không đồng nghĩa thứ tự thực thi.
 
-### 12.5. Cách chạy lại notebook
-
-Notebook chưa nằm trong ZIP repository hiện tại. Để tái hiện, lưu file được cung cấp, mở bằng Jupyter/Kaggle hoặc môi trường notebook Python hỗ trợ `await`, rồi:
-
-1. Cài thư viện ở cell đầu; bảo đảm môi trường có cả NumPy vì các cell sau có import.
-2. Đặt `BASE_URL` đến môi trường cần thử. Với backend local: `http://localhost:5000/api`.
-3. Cấu hình tài khoản demo **tồn tại** trên database đích; không mặc định migration tạo tài khoản này.
-4. Chuẩn bị suất chiếu chưa bắt đầu và ít nhất một ghế trống cho bài tranh chấp.
-5. Chạy các cell lần lượt và giữ output. Các bài tranh chấp tự tạo tài khoản và thay đổi trạng thái giữ ghế; nên dùng môi trường/dataset thử riêng.
-6. Lưu status, loại lỗi và CSV của từng request; xác nhận dọn dữ liệu và đối chiếu database sau test.
-
 ## 13. Triển khai và vận hành
 
 ### Frontend
