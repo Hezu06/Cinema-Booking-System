@@ -7,6 +7,7 @@ Hệ thống đặt vé xem phim của **Nhóm 8**, gồm giao diện khách hà
 | Giao diện triển khai | [cbs-project8.vercel.app](https://cbs-project8.vercel.app/) |
 | Swagger UI triển khai | [Tài liệu Cinema Booking System API](https://cinema-booking-system-esvw.onrender.com/api-docs) |
 | Backend triển khai | https://cinema-booking-system-esvw.onrender.com |
+| Tài liệu đặc tả | [CBS Docs](https://docs.google.com/document/d/1B_aNnkKWiQXstp545iEiL28QV7SFEieEPcsvvMGbnbI/edit?usp=drivesdk) |
 
 ## Mục lục
 
@@ -24,7 +25,6 @@ Hệ thống đặt vé xem phim của **Nhóm 8**, gồm giao diện khách hà
 12. [Kiểm thử tải và tranh chấp ghế](#12-kiểm-thử-tải-và-tranh-chấp-ghế)
 13. [Triển khai và vận hành](#13-triển-khai-và-vận-hành)
 14. [Giới hạn và hướng phát triển](#14-giới-hạn-và-hướng-phát-triển)
-15. [Thông tin cần bổ sung](#15-thông-tin-cần-bổ-sung)
 
 ## 1. Thông tin nhóm
 
