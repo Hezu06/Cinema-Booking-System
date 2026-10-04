@@ -11,17 +11,20 @@ services:
     environment:
       NODE_ENV: development
       DEBUG: "cinema-booking:*"
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
 
     ports:
       - "5000:5000"
       - "9229:9229"  # Node debugger
 
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/dist
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./generated:/app/generated
 
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
 
   mysql:
     environment:
