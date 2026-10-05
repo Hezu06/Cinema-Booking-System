@@ -749,13 +749,15 @@ Entrypoint hiện có nhánh fallback `db push` khi migration thất bại. Khô
 
 ### Định hướng giai đoạn tiếp theo
 
-| Thuộc tính/mục tiêu | Hướng cải tiến | Cách đánh giá |
-| --- | --- | --- |
-| Nhất quán dữ liệu | Rà soát tranh chấp giữ/đặt/hủy ghế; xử lý retry và idempotency cho yêu cầu tạo booking. | Kiểm thử nhiều tài khoản đồng thời và đối chiếu booking/vé/ghế trong database. |
-| Hiệu năng | Đo truy vấn và endpoint chậm, tối ưu index/pool; cân nhắc cache cho dữ liệu đọc ít thay đổi. | So sánh cùng kịch bản trước/sau bằng RPS, P95/P99 và tỷ lệ lỗi. |
-| Khả năng bảo trì | Chuẩn hóa ánh xạ lỗi, ranh giới Service/Repository và cấu hình môi trường. | Review thay đổi, typecheck/build và test nghiệp vụ khi refactor. |
-| Bảo mật | Rà soát secret, CORS, quyền truy cập, giới hạn request và nội dung log. | Test token sai/hết hạn, tài khoản BLOCKED và truy cập trái quyền. |
-| Khả năng quan sát | Bổ sung request ID, log có cấu trúc và health/readiness kiểm tra DB. | Theo dõi một lỗi xuyên suốt các tầng và phát hiện mất kết nối DB. |
-| Hoàn thiện sản phẩm | Giao diện quản trị, cổng thanh toán thực tế và luồng soát vé. | Kiểm thử xuyên suốt, kiểm thử tích hợp và xác nhận phạm vi nghiệp vụ mới. |
+Giai đoạn tiếp theo tập trung cải thiện các **thuộc tính chất lượng phần mềm**:
 
-Ưu tiên cải tiến dựa trên lỗi và số liệu đo được. Mỗi thay đổi nên có phạm vi rõ ràng, baseline, kết quả sau cải tiến và đánh đổi; không coi các hướng trên là cam kết tất cả đã được triển khai.
+| Thuộc tính chất lượng | Công việc dự kiến | Cách đánh giá |
+| --- | --- | --- |
+| **Tính nhất quán và toàn vẹn dữ liệu (Consistency & Data Integrity)** | Rà soát transaction giữ/đặt/hủy ghế; bổ sung idempotency để tránh tạo booking trùng khi gửi lại request. | Nhiều tài khoản cùng đặt một ghế, hủy lặp và hủy đồng thời với đặt lại; đối chiếu booking, vé và trạng thái ghế trong database. |
+| **Hiệu năng (Performance)** | Điều tra lỗi đăng nhập dưới tải; tối ưu truy vấn sơ đồ ghế, dữ liệu trả về, index và connection pool dựa trên phép đo. | So sánh throughput thành công, P95/P99 và tỷ lệ lỗi trước/sau trên cùng môi trường, dữ liệu và mức tải. |
+| **Độ tin cậy và khả năng phục hồi (Reliability & Recoverability)** | Bổ sung worker giải phóng hold hết hạn; bảo đảm không giải phóng ghế vừa được gia hạn hoặc đặt thành công. | Kiểm thử hết hạn, bỏ dở thao tác, khởi động lại backend và tranh chấp với worker. |
+| **Khả năng mở rộng (Scalability)** | Thử Redis cho dữ liệu phim/rạp để giảm tải đọc database; có TTL, xóa cache khi cập nhật và fallback về MySQL. MySQL tiếp tục quyết định quyền sở hữu ghế. | Tăng dần tải, đo cache hit rate, throughput và độ trễ; kiểm tra dữ liệu sau cập nhật hoặc khi Redis lỗi. |
+| **Khả năng bảo trì và kiểm thử (Maintainability & Testability)** | Chuẩn hóa xử lý lỗi, ranh giới Service/Repository và bổ sung kiểm thử tự động cho nghiệp vụ quan trọng. | Chạy test nghiệp vụ/API, typecheck/build và đánh giá phạm vi ảnh hưởng khi thay đổi quy tắc đặt vé. |
+| **Khả năng quan sát (Observability)** | Bổ sung request ID, log có cấu trúc, số liệu thời gian xử lý và readiness kiểm tra database. | Truy vết request lỗi qua log, phân biệt lỗi nghiệp vụ với lỗi hệ thống và xác nhận hành vi khi database/migration gặp lỗi. |
+| **Tính dễ sử dụng (Usability)** | Nếu đủ thời gian, bổ sung Admin UI và cập nhật trạng thái ghế bằng SSE/WebSocket, kèm xử lý mất kết nối. | Kiểm thử xuyên suốt các thao tác quản trị/đặt vé; đo độ trễ cập nhật ghế và kiểm tra giao diện sau khi kết nối lại. |
+| **Khả năng tương tác và bảo mật (Interoperability & Security)** | Nếu đủ thời gian, tích hợp một cổng thanh toán sandbox; xác minh callback, xử lý callback lặp và không xác nhận vé chỉ từ kết quả trên frontend. | Kiểm thử callback hợp lệ, giả mạo, lặp, thất bại và đến muộn; đối chiếu trạng thái thanh toán với booking. |
