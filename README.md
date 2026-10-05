@@ -1,19 +1,20 @@
 # Cinema Booking System — Sọt phim
 
-Hệ thống đặt vé xem phim của **Nhóm 8**, gồm giao diện khách hàng bằng React và backend REST API bằng Node.js/Express. Khách hàng có thể tra cứu phim, chọn suất chiếu, chọn và giữ ghế, xác nhận đặt vé và quản lý booking cá nhân. Quản trị viên quản lý dữ liệu rạp chiếu thông qua các API được phân quyền.
+**Sọt phim** là hệ thống đặt vé xem phim do Nhóm 8 phát triển trong môn Kiến trúc phần mềm. Hệ thống cung cấp giao diện khách hàng để tra cứu phim, lựa chọn suất chiếu, chọn ghế và quản lý vé cá nhân. Backend cung cấp REST API phục vụ đặt vé và quản lý dữ liệu rạp chiếu, với cơ chế xác thực và phân quyền theo vai trò.
 
 | Tài nguyên | Đường dẫn |
 | --- | --- |
 | Giao diện triển khai | [cbs-project8.vercel.app](https://cbs-project8.vercel.app/) |
 | Swagger UI triển khai | [Tài liệu Cinema Booking System API](https://cinema-booking-system-esvw.onrender.com/api-docs) |
-| Backend triển khai | https://cinema-booking-system-esvw.onrender.com |
+| Backend triển khai | [Render](https://cinema-booking-system-esvw.onrender.com) |
+| Mã nguồn | [Cinema-Booking-System](https://github.com/Hezu06/Cinema-Booking-System) |
 | Tài liệu đặc tả | [CBS Docs](https://docs.google.com/document/d/1B_aNnkKWiQXstp545iEiL28QV7SFEieEPcsvvMGbnbI/edit?usp=drivesdk) |
 
 ## Mục lục
 
 1. [Thông tin nhóm](#1-thông-tin-nhóm)
 2. [Mục tiêu và phạm vi](#2-mục-tiêu-và-phạm-vi)
-3. [Chức năng và use case](#3-chức-năng-và-use-case)
+3. [Chức năng hệ thống](#3-chức-năng-hệ-thống)
 4. [Công nghệ](#4-công-nghệ)
 5. [Kiến trúc phần mềm](#5-kiến-trúc-phần-mềm)
 6. [Mô hình dữ liệu và nghiệp vụ](#6-mô-hình-dữ-liệu-và-nghiệp-vụ)
@@ -24,7 +25,7 @@ Hệ thống đặt vé xem phim của **Nhóm 8**, gồm giao diện khách hà
 11. [Kiểm tra build và kiểm thử chức năng](#11-kiểm-tra-build-và-kiểm-thử-chức-năng)
 12. [Kiểm thử tải và tranh chấp ghế](#12-kiểm-thử-tải-và-tranh-chấp-ghế)
 13. [Triển khai và vận hành](#13-triển-khai-và-vận-hành)
-14. [Giới hạn và hướng phát triển](#14-giới-hạn-và-hướng-phát-triển)
+14. [Phạm vi hoàn thiện và hướng phát triển](#14-phạm-vi-hoàn-thiện-và-hướng-phát-triển)
 
 ## 1. Thông tin nhóm
 
@@ -44,8 +45,6 @@ Hệ thống đặt vé xem phim của **Nhóm 8**, gồm giao diện khách hà
 | 2 | Nguyễn Trung Hiếu | 24020128 |
 | 3 | Vũ Thị Huyền Chang | 24020045 |
 
-Phân công công việc cụ thể của từng thành viên cần được nhóm bổ sung.
-
 ## 2. Mục tiêu và phạm vi
 
 ### Mục tiêu
@@ -57,42 +56,42 @@ Phân công công việc cụ thể của từng thành viên cần được nh�
 - Xử lý trạng thái ghế theo từng suất chiếu, sử dụng transaction và cập nhật có điều kiện khi giữ hoặc đặt ghế.
 - Cung cấp Swagger UI để mô tả và thử nghiệm API.
 
-### Phạm vi hiện tại
+### Phạm vi phiên bản hiện tại
 
-Mã nguồn đã có frontend khách hàng và backend cho Auth, Movie, Cinema, Room, Seat, Showtime, Booking. Dữ liệu Ticket được tạo trong luồng Booking; hiện chưa có router `/api/tickets` độc lập.
+Hệ thống gồm frontend khách hàng và các module backend Auth, Movie, Cinema, Room, Seat, Showtime, Booking. Vé được tạo và truy xuất trong luồng Booking.
 
 Phiên bản hiện tại có cơ chế giữ ghế theo thời hạn. Giao diện thanh toán cung cấp lựa chọn phương thức, nhưng thao tác hoàn tất gọi API tạo booking. Hệ thống chưa xử lý giao dịch tiền thật qua ngân hàng hoặc ví điện tử, chưa có hoàn tiền tự động và chưa tích hợp thiết bị soát vé.
 
-## 3. Chức năng và use case
+## 3. Chức năng hệ thống
 
 ### Khách hàng
 
-| Use case | Chức năng | Cách hoạt động |
-| --- | --- | --- |
-| UC-01 | Đăng ký | Kiểm tra thông tin và tạo tài khoản mặc định có quyền `CUSTOMER`. |
-| UC-02 | Đăng nhập | Xác thực email/mật khẩu và trả JWT access token. |
-| UC-03 | Xem danh sách phim | Lấy phim từ API và hiển thị trên giao diện khách hàng. |
-| UC-04 | Xem chi tiết phim | Xem mô tả, thể loại, thời lượng, ngày phát hành và poster. |
-| UC-05 | Xem suất chiếu | Tra cứu theo phim, rạp, phòng, ngày và trạng thái. |
-| UC-06 | Xem ghế theo suất chiếu | Lấy sơ đồ ghế và trạng thái `AVAILABLE`, `HELD`, `BOOKED`. |
-| UC-07 | Đặt vé | Kiểm tra suất chiếu và ghế, tạo booking cùng các vé tương ứng. |
-| UC-08 | Xem booking cá nhân | Xem danh sách và chi tiết booking thuộc tài khoản đang đăng nhập. |
-| UC-09 | Hủy booking | Kiểm tra quyền, thời điểm suất chiếu và trạng thái; hủy vé và giải phóng ghế. |
+| Chức năng | Mô tả |
+| --- | --- |
+| Đăng ký | Kiểm tra thông tin và tạo tài khoản mặc định có quyền `CUSTOMER`. |
+| Đăng nhập | Xác thực email/mật khẩu và trả JWT access token. |
+| Xem danh sách phim | Lấy phim từ API và hiển thị trên giao diện khách hàng. |
+| Xem chi tiết phim | Xem mô tả, thể loại, thời lượng, ngày phát hành và poster. |
+| Xem suất chiếu | Tra cứu theo phim, rạp, phòng, ngày và trạng thái. |
+| Xem ghế theo suất chiếu | Lấy sơ đồ ghế và trạng thái `AVAILABLE`, `HELD`, `BOOKED`. |
+| Đặt vé | Kiểm tra suất chiếu và ghế, tạo booking cùng các vé tương ứng. |
+| Xem booking cá nhân | Xem danh sách và chi tiết booking thuộc tài khoản đang đăng nhập. |
+| Hủy booking | Kiểm tra quyền, thời điểm suất chiếu và trạng thái; hủy vé và giải phóng ghế. |
 
-Ngoài các use case cốt lõi, phiên bản hiện tại cung cấp API giữ/nhả ghế, thông tin tài khoản và giao diện đếm ngược thời hạn giữ chỗ. Trang chọn ghế cập nhật trạng thái bằng polling khoảng **3,5 giây** khi tab đang hiển thị; hệ thống chưa sử dụng WebSocket để đẩy trạng thái tức thời.
+Hệ thống cung cấp API giữ và nhả ghế, kèm thời gian đếm ngược trên giao diện. Trang chọn ghế cập nhật trạng thái bằng polling khoảng **3,5 giây** khi tab đang hiển thị.
 
 ### Quản trị viên
 
-| Use case | Chức năng | Cách hoạt động |
-| --- | --- | --- |
-| UC-10 | Quản lý phim | Thêm, cập nhật và xóa dữ liệu phim qua API. |
-| UC-11 | Quản lý rạp | Quản lý tên, địa chỉ và thành phố của rạp. |
-| UC-12 | Quản lý phòng | Quản lý phòng thuộc rạp, loại phòng và sức chứa. |
-| UC-13 | Quản lý ghế | Quản lý vị trí, loại ghế và trạng thái hoạt động của ghế vật lý. |
-| UC-14 | Quản lý suất chiếu | Tạo/cập nhật/xóa lịch chiếu, kiểm tra tham chiếu và lịch chồng lấn. |
-| Bổ sung | Xem toàn bộ booking | Tra cứu booking trên hệ thống với quyền `ADMIN`. |
+| Chức năng | Mô tả |
+| --- | --- |
+| Quản lý phim | Thêm, cập nhật và xóa dữ liệu phim qua API. |
+| Quản lý rạp | Quản lý tên, địa chỉ và thành phố của rạp. |
+| Quản lý phòng | Quản lý phòng thuộc rạp, loại phòng và sức chứa. |
+| Quản lý ghế | Quản lý vị trí, loại ghế và trạng thái hoạt động của ghế vật lý. |
+| Quản lý suất chiếu | Tạo/cập nhật/xóa lịch chiếu, kiểm tra tham chiếu và lịch chồng lấn. |
+| Xem toàn bộ booking | Tra cứu booking trên hệ thống với quyền `ADMIN`. |
 
-Các thao tác quản trị được thực hiện qua REST API, có thể minh họa bằng Swagger. Frontend hiện chưa có dashboard quản trị hoàn chỉnh.
+Các thao tác quản trị thực hiện qua REST API và yêu cầu quyền Admin. Swagger UI hỗ trợ gọi và kiểm thử các API này.
 
 ## 4. Công nghệ
 
@@ -139,9 +138,7 @@ flowchart TD
 | Data Access | `src/data-access/` | Truy vấn Prisma, ánh xạ dữ liệu và thực hiện transaction. |
 | Cấu hình dùng chung | `src/config/`, `src/shared/` | Tài liệu Swagger và tiện ích xác thực. |
 
-Controller là nơi kiểm tra Zod và ánh xạ lỗi nghiệp vụ sang HTTP trong mã nguồn hiện tại. 
-
-Service không nhận `Request`/`Response` của Express. Các transaction giữ/đặt/hủy ghế hiện được đặt trong Booking Repository và bao gồm một phần kiểm tra nghiệp vụ liên quan đến dữ liệu. Vì vậy, ranh giới phân tầng là cơ sở thiết kế, không có nghĩa là Clean Architecture được tuân thủ tuyệt đối ở mọi module.
+Controller kiểm tra dữ liệu bằng Zod và chuyển kết quả xử lý thành phản hồi HTTP. Service làm việc với model và interface, độc lập với đối tượng request/response của Express. Booking Repository thực hiện transaction cho các thao tác giữ, đặt và hủy ghế.
 
 ### Luồng đặt vé
 
@@ -154,7 +151,7 @@ Service không nhận `Request`/`Response` của Express. Các transaction giữ
 
 ## 6. Mô hình dữ liệu và nghiệp vụ
 
-### Các thực thể hiện có
+### Các thực thể dữ liệu
 
 Schema hiện có **10 model**, được định nghĩa tại `prisma/schema.prisma`.
 
@@ -170,8 +167,6 @@ Schema hiện có **10 model**, được định nghĩa tại `prisma/schema.pri
 | `Booking` | `bookings` | Đơn đặt vé của người dùng. |
 | `BookingSeat` | `booking_seats` | Các ghế và giá ghi nhận trong một booking. |
 | `Ticket` | `tickets` | Vé tương ứng với từng BookingSeat. |
-
-`Payment` chưa có trong schema hiện tại.
 
 ```mermaid
 erDiagram
@@ -189,9 +184,9 @@ erDiagram
     BookingSeat ||--o| Ticket : generates
 ```
 
-Một `ShowtimeSeat` có thể xuất hiện trong nhiều bản ghi `BookingSeat` lịch sử sau khi booking cũ bị hủy và ghế được đặt lại. Điều này khác với việc cho phép nhiều booking còn hiệu lực cùng chiếm một ghế.
+`Seat` mô tả vị trí ghế vật lý trong phòng; `ShowtimeSeat` quản lý giá và trạng thái của vị trí đó theo từng suất chiếu. `BookingSeat` lưu thông tin ghế và giá vé của từng booking, bao gồm lịch sử booking đã hủy.
 
-### Quy tắc đang triển khai
+### Quy tắc nghiệp vụ
 
 - Email và số điện thoại có ràng buộc duy nhất; mật khẩu được băm bằng bcryptjs.
 - Đăng ký không nhận quyền Admin từ client; người dùng mới có quyền `CUSTOMER`.
@@ -207,9 +202,9 @@ Một `ShowtimeSeat` có thể xuất hiện trong nhiều bản ghi `BookingSea
 - Khách hàng chỉ xem/hủy booking của mình; Admin có thể thao tác booking của người khác theo logic hiện tại.
 - Không hủy booking đã hủy hoặc khi suất chiếu đã bắt đầu. Hủy hợp lệ cập nhật booking/vé sang `CANCELLED` và trả ghế về `AVAILABLE`.
 
-**Cơ chế hết hạn giữ ghế:** API đọc sơ đồ ghế giải phóng các hold hết hạn của suất chiếu; các thao tác giữ/đặt cũng xử lý điều kiện hold hết hạn. Chưa có tác vụ nền chạy riêng để quét toàn bộ hold.
+**Hết hạn giữ ghế:** hệ thống xử lý các hold hết hạn khi đọc sơ đồ ghế và thực hiện thao tác giữ hoặc đặt ghế.
 
-**Cơ chế tranh chấp:** giữ/đặt ghế sử dụng transaction, cập nhật có điều kiện và kiểm tra số bản ghi cập nhật. Khả năng xử lý dưới tải và các cuộc đua giữa đặt/hủy cần được xác nhận bằng kiểm thử đồng thời; ràng buộc unique trong schema không tự chứng minh toàn bộ luồng không đặt trùng.
+**Xử lý tranh chấp ghế:** thao tác giữ và đặt ghế sử dụng transaction, cập nhật có điều kiện và kiểm tra số bản ghi cập nhật. Kết quả kiểm thử giữ ghế đồng thời được trình bày tại mục 12.
 
 ## 7. Cấu trúc mã nguồn
 
@@ -264,7 +259,7 @@ Cinema-Booking-System/
 ### 8.1. Yêu cầu môi trường
 
 - Git để clone repository.
-- **Node.js 22.12 trở lên trong dòng 22 LTS**, cùng npm, để chạy frontend hoặc backend trực tiếp. Mốc này phù hợp với yêu cầu Node của Prisma/Vite trong lockfile hiện tại.
+- **Node.js 22 LTS, phiên bản 22.12 trở lên**, và npm.
 - Docker và Docker Compose v2 nếu chạy MySQL/backend bằng container.
 - MySQL 8.4 nếu tự cài database thay vì dùng container.
 - Cổng **3306**, **5000**, **5173** khả dụng.
@@ -309,9 +304,9 @@ Có thể tạo chuỗi bí mật local bằng:
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-Dán kết quả vào `JWT_SECRET`. Nếu chưa tạo migration mới, có thể xóa dòng `SHADOW_DATABASE_URL` khỏi `.env`: chạy các migration đã có bằng `migrate deploy` không cần shadow database.
+Dán kết quả vào `JWT_SECRET`. `SHADOW_DATABASE_URL` chỉ cần khi phát triển migration bằng `migrate dev`. Để áp dụng migration có sẵn bằng `migrate deploy`, có thể bỏ biến này khỏi `.env`.
 
-> `.env.example` hiện đặt `PORT=3000`, trong khi `client/vite.config.ts` proxy đến `localhost:5000`. README này thống nhất dùng **5000**. Docker Compose cũng cố định app ở cổng 5000.
+Sử dụng **PORT=5000** để khớp với proxy trong `client/vite.config.ts` và cấu hình Docker Compose.
 
 ### 8.3. Cách A — Backend và MySQL bằng Docker
 
@@ -323,7 +318,7 @@ docker compose ps
 docker compose logs -f app
 ```
 
-Container MySQL được kiểm tra health trước khi app khởi động. Entrypoint gọi `prisma migrate deploy`; cần xem log để xác nhận migration thành công. Nhấn `Ctrl+C` để thoát xem log, container vẫn chạy.
+Docker Compose chờ MySQL ở trạng thái healthy trước khi khởi động app. Entrypoint áp dụng migration. Nhấn `Ctrl+C` để thoát màn hình log mà vẫn giữ container hoạt động.
 
 Kiểm tra trạng thái migration khi cần:
 
@@ -337,7 +332,7 @@ Các URL backend:
 - Swagger: http://localhost:5000/api-docs
 - REST API: http://localhost:5000/api
 
-Docker Compose hiện chỉ chạy **MySQL và backend**, chưa chạy frontend. Mở terminal thứ hai tại thư mục gốc:
+Docker Compose chạy MySQL và backend. Frontend chạy riêng trên máy local. Mở terminal thứ hai tại thư mục gốc:
 
 ```bash
 npm ci --prefix client
@@ -354,7 +349,7 @@ docker compose down
 
 Lệnh này giữ dữ liệu trong volume MySQL. `docker compose down -v` xóa volume và toàn bộ dữ liệu local; chỉ dùng khi chủ động muốn reset.
 
-Docker Compose khai báo chuỗi kết nối MySQL của app đến hostname `mysql`. Sửa riêng `DATABASE_URL` trong `.env` sẽ không chuyển app container sang Railway, vì giá trị này đang được ghi trực tiếp trong `docker-compose.yml`.
+App container kết nối tới service `mysql` theo cấu hình trong `docker-compose.yml`. Để sử dụng database khác, điều chỉnh chuỗi kết nối tại file Compose.
 
 ### 8.4. Cách B — Backend trực tiếp bằng Node.js
 
@@ -402,11 +397,11 @@ Có thể dùng URL tuyệt đối trong `client/.env.local`:
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Khởi động lại Vite sau khi đổi biến môi trường. URL phải có tiền tố `/api` và nên không có dấu `/` ở cuối, vì HTTP client nối trực tiếp endpoint vào URL này.
+Khởi động lại Vite sau khi đổi biến môi trường. URL phải bao gồm `/api` và không có dấu `/` ở cuối, vì HTTP client nối trực tiếp endpoint vào URL này.
 
 ### 8.6. Khởi tạo dữ liệu và tài khoản Admin
 
-Migration chỉ tạo/cập nhật schema; **không tự tạo phim, rạp, ghế, suất chiếu hoặc tài khoản demo**. Bản hiện tại chưa có file seed, nên chưa chạy được `npm run prisma:seed`.
+Migration tạo cấu trúc cơ sở dữ liệu. Phiên bản hiện tại chưa kèm file seed; dữ liệu demo và tài khoản được khởi tạo qua API theo quy trình dưới đây.
 
 Quy trình dữ liệu local:
 
@@ -434,7 +429,7 @@ FROM `User`
 WHERE email = 'admin.local@example.com';
 ```
 
-Đăng nhập lại bằng tài khoản này để lấy token có role mới. Không chỉnh chuỗi JWT để tự cấp quyền.
+Đăng nhập lại bằng tài khoản này để lấy token có role mới.
 
 **Tạo ghế trước khi tạo suất chiếu:** khi tạo suất chiếu, backend sinh các `ShowtimeSeat` từ ghế đang active trong phòng. Tạo ghế vật lý sau đó không tự bổ sung ghế vào những suất chiếu đã tồn tại.
 
@@ -444,7 +439,7 @@ WHERE email = 'admin.local@example.com';
 | --- | --- | --- |
 | `DATABASE_URL` | Backend và Prisma CLI | URL kết nối MySQL; được ưu tiên khi tạo adapter runtime. |
 | `SHADOW_DATABASE_URL` | Prisma CLI | Database riêng cho `migrate dev`; không cần với `migrate deploy`. |
-| `PORT` | Backend | Cổng HTTP; README dùng 5000 để khớp proxy frontend. |
+| `PORT` | Backend | Cổng HTTP; sử dụng 5000 khi chạy local. |
 | `JWT_SECRET` | Backend | Khóa ký/xác minh JWT; cần cấu hình để đăng nhập và gọi API được bảo vệ. |
 | `JWT_EXPIRES_IN` | Backend | Thời hạn access token, ví dụ `1h`. |
 | `NODE_ENV` | Backend | Môi trường vận hành; một số lỗi ẩn chi tiết khi là `production`. |
@@ -498,7 +493,7 @@ Ví dụ query:
 /api/bookings?status=CONFIRMED
 ```
 
-Filter `date` của suất chiếu hiện được backend diễn giải thành khoảng ngày **UTC**. Cần kiểm tra thời gian hiển thị khi dữ liệu/giao diện dùng giờ Việt Nam.
+Bộ lọc `date` của API suất chiếu sử dụng ngày **UTC**.
 
 ### 10.2. Đăng nhập và Authorize
 
@@ -524,7 +519,7 @@ Với Postman/cURL/HTTP client, header là `Authorization: Bearer <accessToken>`
 }
 ```
 
-Đây là dữ liệu ví dụ local; không phải tài khoản có sẵn trên cloud.
+Sử dụng dữ liệu trên để tạo tài khoản thử nghiệm ở môi trường local.
 
 **Giữ ghế — `POST /api/bookings/hold`**
 
@@ -545,7 +540,7 @@ Với Postman/cURL/HTTP client, header là `Authorization: Bearer <accessToken>`
 }
 ```
 
-Thay các placeholder bằng ID thực tế. Nên dùng `id` của bản ghi trong `GET /api/showtimes/{id}/seats` để gửi `showtimeSeatIds`; không tự đoán ID. API cũng hỗ trợ ID ghế vật lý trong logic Repository hiện tại, nhưng dùng ShowtimeSeat ID giúp thể hiện đúng ngữ cảnh suất chiếu.
+Thay các placeholder bằng ID thực tế. Lấy `showtimeSeatIds` từ trường `id` trong kết quả `GET /api/showtimes/{id}/seats`.
 
 Response thành công thường có `success: true` và `data`; lỗi thường có `success: false`, `message` và có thể có `errors`. Đọc schema từng endpoint trong Swagger để biết đầy đủ cấu trúc.
 
@@ -580,9 +575,7 @@ Build backend tạo `dist/`; chạy bản đã biên dịch bằng `npm start`. 
 docker compose up -d --build app
 ```
 
-Typecheck/build/lint giúp phát hiện lỗi mã nguồn, không thay thế kiểm thử nghiệp vụ hoặc kiểm thử API. README không khẳng định các lệnh đã thành công trên mọi môi trường.
-
-### 11.2. Checklist chức năng đề xuất
+### 11.2. Kịch bản kiểm thử chức năng
 
 | Nhóm | Trường hợp cần kiểm tra | Kết quả cần đối chiếu |
 | --- | --- | --- |
@@ -596,13 +589,13 @@ Typecheck/build/lint giúp phát hiện lỗi mã nguồn, không thay thế ki�
 | Ownership/Cancel | Xem/hủy booking người khác, hủy lặp, hủy trước/sau giờ chiếu. | Bảo vệ quyền sở hữu; giải phóng ghế đúng và không làm sai booking mới. |
 | Frontend | Đăng nhập → chọn phim → chọn suất → chọn ghế → xác nhận → vé cá nhân. | Giao diện phản ánh dữ liệu thật và xử lý lỗi API. |
 
-Bản mã nguồn hiện tại chưa kèm bộ unit/integration test. Script `test:concurrency` trỏ đến file chưa có; chỉ chạy sau khi bổ sung file tương ứng. Nhóm đã cung cấp notebook Python kiểm thử tải riêng, với kịch bản và output được trình bày ở mục 12; notebook này chưa nằm trong ZIP mã nguồn. Kết quả kiểm thử cần ghi cùng phiên bản mã nguồn và môi trường thực hiện.
+Bảng trên xác định phạm vi kiểm thử chức năng dự kiến. Kết quả kiểm thử tải và tranh chấp giữ ghế đã ghi nhận được trình bày tại mục 12.
 
 ## 12. Kiểm thử tải và tranh chấp ghế
 
-### 12.1. Nguồn kết quả và phương pháp
+### 12.1. Môi trường và phương pháp
 
-Nhóm cung cấp notebook **`test-load-cinema-booking-system (1).ipynb`** với mã kiểm thử và output đã lưu. Các số liệu dưới đây được trích từ output của notebook, không phải kết quả chạy lại trong quá trình biên soạn README.
+Kết quả được tổng hợp từ notebook `test-load-cinema-booking-system (1).ipynb`, sử dụng Python để kiểm thử REST API đã triển khai trên Render.
 
 | Thành phần | Thông tin |
 | --- | --- |
@@ -610,76 +603,37 @@ Nhóm cung cấp notebook **`test-load-cinema-booking-system (1).ipynb`** với 
 | Công cụ gửi tải | Python, `asyncio`, `aiohttp` |
 | Tổng hợp số liệu | pandas, NumPy |
 | Biểu đồ | Matplotlib, Seaborn |
-| Kiểu chạy | Gửi một tập request hữu hạn bằng `asyncio.gather`, giới hạn đồng thời bằng semaphore/connection pool. |
-| Tiêu chí tải đọc/đăng nhập | HTTP 200 được tính là thành công. |
-| Tiêu chí tranh chấp hold | HTTP 200/201 là giữ thành công; HTTP 409 là xung đột dự kiến. |
-| Thông tin còn thiếu | Thời điểm chạy từng bài, commit backend, cấu hình máy phát tải và tài nguyên backend/database. |
+| Phạm vi | Đọc phim/rạp, đọc sơ đồ ghế, đăng nhập và tranh chấp giữ ghế |
 
-Notebook không lưu thông tin đủ để xác nhận cấu hình Kaggle/máy phát tải cụ thể. Các bài tải không có bước ramp-up, thời lượng tải ổn định hoặc soak test riêng. Đây là số liệu của các lượt chạy cụ thể, chưa phải giới hạn tải tối đa của hệ thống.
+Các bài kiểm thử gửi một tập request với giới hạn tác vụ đồng thời. HTTP 200 được ghi nhận là thành công trong các bài tải đọc và đăng nhập.
 
-### 12.2. Kịch bản và kết quả tải
+### 12.2. Kết quả kiểm thử tải
 
-| Kịch bản | Request | Cấu hình đồng thời | Thời gian | HTTP 200 | Không trả HTTP 200/ngoại lệ | Throughput toàn bộ lượt thử | P95 |
-| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| Đọc phim và rạp | 2.000 GET, luân phiên `/movies` và `/cinemas` (1.000 mỗi endpoint) | Semaphore 100; connector 100 | 18,73 s | 2.000 (100%) | 0 (0%) | 106,78 req/s | 1.301,32 ms |
-| Đọc ghế theo suất chiếu | 1.000 GET `/showtimes/{id}/seats`, cùng một suất chiếu | Semaphore 150; session dùng connector mặc định | 69,54 s | 999 (99,9%) | 1 (0,1%) | 14,4 req/s | 11.690,6 ms |
-| Đăng nhập | 150 POST `/auth/login`, dùng cùng một tài khoản demo | Semaphore **50**; session dùng connector mặc định | 62,79 s | 0 (0%) | 150 (100%) | 2,4 req/s | 20.995,8 ms |
+| Kịch bản | Request | Giới hạn tác vụ đồng thời | Thời gian chạy | HTTP 200 | Lượt không thành công | Throughput¹ | P95² |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Đọc phim và rạp | 2.000 GET, 1.000 mỗi endpoint | 100 | 18,73 s | 2.000 | 0 | 106,78 req/s | 1.301,32 ms |
+| Đọc ghế của một suất chiếu | 1.000 GET | 150 | 69,54 s | 999 | 1 | 14,4 req/s | 11.690,6 ms |
+| Đăng nhập cùng một tài khoản | 150 POST | 50 | 62,79 s | 0 | 150 | 2,4 req/s | 20.995,8 ms |
 
-**Cách hiểu mức đồng thời:** output của notebook ghi đăng nhập “150 reqs đồng thời”, nhưng code giới hạn tối đa **50 tác vụ** qua semaphore. Với bài sơ đồ ghế, semaphore là 150 nhưng không cấu hình `TCPConnector(limit=150)`; connector mặc định của aiohttp giới hạn tổng kết nối ở 100. Vì vậy mô tả này không có nghĩa là lượt chạy này đã có 150 kết nối HTTP hoạt động đồng thời.
+¹ Throughput tính trên toàn bộ lượt thử, bao gồm lượt thất bại. Giới hạn tác vụ đồng thời sử dụng semaphore; số kết nối HTTP thực tế còn phụ thuộc connection pool.
 
-**Throughput:** notebook tính tổng số lượt thử chia thời gian chạy, bao gồm cả lượt lỗi. Con số 2,4 req/s của đăng nhập không phải throughput đăng nhập thành công; bài này không ghi nhận HTTP 200 nào.
+² Thời gian được ghi nhận đến khi nhận response headers, bao gồm lượt thất bại. P95 đăng nhập trong bảng không phải độ trễ của các lần đăng nhập thành công.
 
-Chi tiết độ trễ tải đọc phim/rạp:
+Lượt kiểm thử đọc phim và rạp ghi nhận 100% phản hồi HTTP 200. API sơ đồ ghế đạt tỷ lệ thành công 99,9%, nhưng thời gian phản hồi còn cao. Bài đăng nhập không ghi nhận phản hồi HTTP 200 và là hạng mục ưu tiên điều tra trong giai đoạn tiếp theo.
 
-| Chỉ số | Giá trị |
+Các số liệu phản ánh những lượt kiểm thử đã lưu, phục vụ so sánh hiệu năng và xác định khu vực cần tối ưu.
+
+### 12.3. Tranh chấp giữ ghế
+
+Kịch bản sử dụng **20 tài khoản độc lập**, đồng thời gọi `POST /api/bookings/hold` để giữ cùng một ghế còn trống của suất chiếu trong tương lai.
+
+| Kết quả | Số request |
 | --- | ---: |
-| P50 | 908,49 ms |
-| P90 | 1.291,49 ms |
-| P95 | 1.301,32 ms |
-| P99 | 1.395,37 ms |
-| Min | 294,37 ms |
-| Max | 1.707,86 ms |
+| Giữ ghế thành công, HTTP 200/201 | 1 |
+| Xung đột giữ ghế, HTTP 409 | 19 |
+| Phản hồi hoặc ngoại lệ khác | 0 |
 
-Các chỉ số bổ sung:
-
-- Sơ đồ ghế: Max **15.301,9 ms**, timeout cấu hình **15 giây**.
-- Đăng nhập: P50 **20.985,2 ms**, Max **20.996,8 ms**, timeout cấu hình **20 giây**.
-- Tải đọc phim/rạp: timeout cấu hình **10 giây**.
-
-**Diễn giải kết quả:** bài đọc phim/rạp có 100% phản hồi HTTP 200 trong lượt chạy được lưu. Bài sơ đồ ghế có P95 khoảng 11,69 giây và một lượt không thành công. Bài đăng nhập có 100% lượt không trả HTTP 200; độ trễ gần/vượt ngưỡng timeout là dấu hiệu cần điều tra. Output chưa lưu phân bố status/loại ngoại lệ chi tiết, nên chưa thể kết luận tất cả lỗi là timeout hoặc khẳng định bcrypt/CPU là nguyên nhân duy nhất. Cần đối chiếu log, CPU, truy vấn và kết nối database.
-
-### 12.3. Tranh chấp giữ cùng một ghế giữa 20 tài khoản
-
-Kịch bản trong notebook:
-
-1. Đăng nhập hoặc đăng ký **20 tài khoản độc lập**, lấy 20 token riêng.
-2. Chọn một suất chiếu trong tương lai và một `ShowtimeSeat` có trạng thái `AVAILABLE`.
-3. Gửi 20 request `POST /bookings/hold` bằng `asyncio.gather`, cùng suất chiếu và cùng ghế, mỗi request dùng token của một tài khoản.
-4. Tổng hợp status của request giữ ghế.
-5. Gửi yêu cầu `/bookings/release` cho các tài khoản để dọn dữ liệu giữ ghế.
-
-| Kết quả đã lưu | Số lượng |
-| --- | ---: |
-| Tài khoản/request tranh chấp | 20 |
-| Giữ ghế thành công (HTTP 200/201) | 1 |
-| Bị từ chối do xung đột (HTTP 409) | 19 |
-| Phản hồi/ngoại lệ khác | 0 |
-
-**Kết luận trong phạm vi bài test:** lượt chạy ghi nhận đúng một tài khoản giữ được ghế và 19 tài khoản nhận phản hồi xung đột, phù hợp kỳ vọng của kịch bản tranh chấp hold.
-
-Notebook có câu kết luận “an toàn tuyệt đối chống double-booking”, nhưng dữ liệu này chưa chứng minh điều đó: kịch bản gọi `/bookings/hold`, không gọi API tạo booking, không kiểm tra hủy/đặt lại đồng thời và không đối chiếu database sau test. Code có gửi request nhả ghế, nhưng không kiểm tra response của từng lần nhả, nên dòng thông báo dọn dẹp không tự xác nhận ghế đã được giải phóng thành công.
-
-### 12.4. Giới hạn của phép đo và biểu đồ
-
-- Tải đọc/đăng nhập đo từ trước khi gọi HTTP đến lúc nhận được response headers; chưa đọc hết hoặc kiểm tra nội dung JSON. Các số liệu này chưa đại diện cho thời gian tải/hiển thị toàn bộ response trên trình duyệt.
-- Với bài sơ đồ ghế, thời gian đo có thể bao gồm chờ connection pool vì semaphore lớn hơn giới hạn connector.
-- Tỷ lệ lỗi được tính bằng status khác 200 hoặc ngoại lệ. Output không xuất bảng phân bố mã lỗi, nên không phân biệt được toàn bộ lỗi HTTP, kết nối và timeout.
-- Bài tranh chấp đọc JSON để lấy thông báo, nhưng số đo latency được lấy trước lúc đọc JSON xong; ngoại lệ trong hàm này còn được ghi latency bằng 0.
-- Thống kê latency của các bài tải bao gồm cả lượt thất bại. Không diễn giải P95 đăng nhập là độ trễ của những lần đăng nhập thành công.
-- Số liệu phim/rạp được gộp; notebook chưa báo latency riêng từng endpoint.
-- Chú thích “JOIN 5 bảng” trong notebook chưa được chứng minh bằng log SQL hoặc execution plan, nên không dùng như mô tả truy vấn thực tế.
-- Hai biểu đồ so sánh RPS/P95 dùng số liệu viết trực tiếp trong code, không tự tính từ toàn bộ DataFrame; nhãn đọc nhẹ ghi `/movies` nhưng bài đọc thực tế gồm cả phim và rạp. Bảng kết quả ở trên phản ánh output đầy đủ hơn.
-- Mỗi kịch bản có một output được lưu, chưa có thống kê nhiều lượt chạy hoặc phân tích tài nguyên server. Thứ tự cell trong notebook không đồng nghĩa thứ tự thực thi.
+Kết quả ghi nhận một tài khoản giữ được ghế và các tài khoản còn lại nhận phản hồi xung đột. Phạm vi bài kiểm thử là thao tác giữ ghế. Kiểm thử đồng thời toàn bộ luồng tạo, hủy và đặt lại booking thuộc kế hoạch giai đoạn 2.
 
 ## 13. Triển khai và vận hành
 
@@ -716,14 +670,14 @@ docker compose logs -f app
 docker compose logs -f mysql
 ```
 
-`GET /health` hiện chỉ xác nhận HTTP server hoạt động, **không kiểm tra kết nối database**. Cần gọi thêm endpoint có truy vấn dữ liệu hoặc kiểm tra migration để đánh giá database.
+`GET /health` kiểm tra trạng thái HTTP server. Để kiểm tra kết nối database, gọi thêm một endpoint truy vấn dữ liệu hoặc kiểm tra trạng thái migration.
 
 | Triệu chứng | Hướng kiểm tra |
 | --- | --- |
 | Frontend không gọi được API | Kiểm tra backend cổng 5000, proxy Vite và `VITE_API_URL`; khởi động lại Vite khi đổi env. |
 | API trả 500/503 | Xem log backend, `DATABASE_URL`, quyền kết nối và schema database. |
 | Movie hoạt động nhưng Cinema/Room lỗi | Kiểm tra migration và các bảng thực tế `cinemas`, `rooms`; không chỉ tìm tên `Cinema`/`Room`. |
-| “No pending migrations” nhưng thiếu bảng | Kiểm tra database đang kết nối và trạng thái lịch sử migration; không suy ra schema đầy đủ chỉ từ thông báo này. |
+| Thiếu bảng sau khi chạy migration | Kiểm tra database đích, lịch sử migration và các bảng thực tế. |
 | Không có phim/suất chiếu/ghế | Migration không tạo dữ liệu mẫu; tạo dữ liệu đúng thứ tự ở mục 8.6. |
 | 403 ở Room/Seat | Những API quản lý này, kể cả GET, đang yêu cầu Admin. |
 | 409 khi đặt vé | Kiểm tra trạng thái ghế, hold, suất chiếu đã bắt đầu hoặc không còn SCHEDULED. |
@@ -731,33 +685,27 @@ docker compose logs -f mysql
 | Cổng 3306/5000 bị chiếm | Dừng dịch vụ xung đột hoặc đổi port mapping cùng các URL cấu hình liên quan. |
 | Đăng nhập thiếu JWT secret | Cấu hình `JWT_SECRET` và khởi động lại backend. |
 
-Entrypoint hiện có nhánh fallback `db push` khi migration thất bại. Không coi việc app khởi động tiếp là bằng chứng migration đã thành công; cần kiểm tra log và trạng thái schema. Nên hoàn thiện cơ chế dừng khởi động khi migration lỗi trước khi vận hành production.
+## 14. Phạm vi hoàn thiện và hướng phát triển
 
-## 14. Giới hạn và hướng phát triển
+### Phạm vi cần hoàn thiện
 
-### Giới hạn hiện tại
+- Thanh toán hiện mô phỏng bước xác nhận booking; tích hợp cổng thanh toán và hoàn tiền sẽ được phát triển ở giai đoạn sau.
+- Quản trị dữ liệu hiện thực hiện qua API. Dashboard quản trị frontend và đăng nhập Google OAuth chưa được triển khai hoàn chỉnh.
+- Trạng thái ghế cập nhật bằng polling; tác vụ nền tự động giải phóng hold hết hạn thuộc kế hoạch giai đoạn 2.
+- Ghế bổ sung sau khi tạo suất chiếu chưa tự đồng bộ vào suất chiếu đã tồn tại.
+- Vé cung cấp thông tin đặt chỗ và mã vé; tích hợp thiết bị soát vé chưa nằm trong phạm vi phiên bản hiện tại.
 
-- Màn hình lựa chọn phương thức thanh toán là phần mô phỏng; không thực hiện thu tiền, hoàn tiền hoặc xác minh giao dịch từ cổng thanh toán.
-- Ticket có dữ liệu `qrCode` dạng chuỗi `TICKET:<ticketCode>`; không đồng nghĩa đã có hệ thống quét vé và kiểm soát ra vào.
-- Chưa có dashboard quản trị frontend và router Ticket độc lập.
-- Nút “Continue with Google (Auto Demo)” hiện điền thông tin tài khoản demo; chưa phải Google OAuth. Tài khoản đó cũng không tự được tạo bởi migration.
-- Một số nội dung giao diện là placeholder/trang đang phát triển; không xem quảng cáo trên giao diện là bằng chứng đã triển khai voucher, điểm thưởng, ví, ứng dụng mobile hoặc dịch vụ hỗ trợ.
-- Cập nhật ghế dùng polling; hết hạn hold xử lý khi có thao tác API liên quan, chưa có scheduler riêng.
-- Tạo ghế sau khi suất chiếu đã tồn tại chưa tự đồng bộ ShowtimeSeat. Kiểm thử thay đổi phòng/giá/trạng thái suất chiếu sau khi đã có booking cần được bổ sung.
-- Thông báo lỗi chưa thống nhất hoàn toàn về ngôn ngữ và cơ chế xử lý giữa các module.
-- Đã có notebook riêng với kết quả tải đọc/đăng nhập và tranh chấp giữ ghế ở mục 12. Tuy nhiên, ZIP mã nguồn chưa kèm notebook hoặc bộ test tự động; kết quả hiện có chưa chứng minh độ tin cậy/hiệu năng toàn hệ thống.
+### Định hướng giai đoạn 2
 
-### Định hướng giai đoạn tiếp theo
-
-Giai đoạn tiếp theo tập trung cải thiện các **thuộc tính chất lượng phần mềm**:
+Giai đoạn 2 tập trung cải thiện các thuộc tính chất lượng dựa trên kết quả kiểm thử và nhu cầu hoàn thiện luồng đặt vé:
 
 | Thuộc tính chất lượng | Công việc dự kiến | Cách đánh giá |
 | --- | --- | --- |
-| **Tính nhất quán và toàn vẹn dữ liệu (Consistency & Data Integrity)** | Rà soát transaction giữ/đặt/hủy ghế; bổ sung idempotency để tránh tạo booking trùng khi gửi lại request. | Nhiều tài khoản cùng đặt một ghế, hủy lặp và hủy đồng thời với đặt lại; đối chiếu booking, vé và trạng thái ghế trong database. |
-| **Hiệu năng (Performance)** | Điều tra lỗi đăng nhập dưới tải; tối ưu truy vấn sơ đồ ghế, dữ liệu trả về, index và connection pool dựa trên phép đo. | So sánh throughput thành công, P95/P99 và tỷ lệ lỗi trước/sau trên cùng môi trường, dữ liệu và mức tải. |
-| **Độ tin cậy và khả năng phục hồi (Reliability & Recoverability)** | Bổ sung worker giải phóng hold hết hạn; bảo đảm không giải phóng ghế vừa được gia hạn hoặc đặt thành công. | Kiểm thử hết hạn, bỏ dở thao tác, khởi động lại backend và tranh chấp với worker. |
-| **Khả năng mở rộng (Scalability)** | Thử Redis cho dữ liệu phim/rạp để giảm tải đọc database; có TTL, xóa cache khi cập nhật và fallback về MySQL. MySQL tiếp tục quyết định quyền sở hữu ghế. | Tăng dần tải, đo cache hit rate, throughput và độ trễ; kiểm tra dữ liệu sau cập nhật hoặc khi Redis lỗi. |
-| **Khả năng bảo trì và kiểm thử (Maintainability & Testability)** | Chuẩn hóa xử lý lỗi, ranh giới Service/Repository và bổ sung kiểm thử tự động cho nghiệp vụ quan trọng. | Chạy test nghiệp vụ/API, typecheck/build và đánh giá phạm vi ảnh hưởng khi thay đổi quy tắc đặt vé. |
-| **Khả năng quan sát (Observability)** | Bổ sung request ID, log có cấu trúc, số liệu thời gian xử lý và readiness kiểm tra database. | Truy vết request lỗi qua log, phân biệt lỗi nghiệp vụ với lỗi hệ thống và xác nhận hành vi khi database/migration gặp lỗi. |
-| **Tính dễ sử dụng (Usability)** | Nếu đủ thời gian, bổ sung Admin UI và cập nhật trạng thái ghế bằng SSE/WebSocket, kèm xử lý mất kết nối. | Kiểm thử xuyên suốt các thao tác quản trị/đặt vé; đo độ trễ cập nhật ghế và kiểm tra giao diện sau khi kết nối lại. |
-| **Khả năng tương tác và bảo mật (Interoperability & Security)** | Nếu đủ thời gian, tích hợp một cổng thanh toán sandbox; xác minh callback, xử lý callback lặp và không xác nhận vé chỉ từ kết quả trên frontend. | Kiểm thử callback hợp lệ, giả mạo, lặp, thất bại và đến muộn; đối chiếu trạng thái thanh toán với booking. |
+| **Tính nhất quán và toàn vẹn dữ liệu** | Hoàn thiện transaction giữ/đặt/hủy ghế; bổ sung idempotency để tránh tạo booking trùng khi gửi lại request. | Nhiều tài khoản cùng đặt một ghế, hủy lặp và hủy đồng thời với đặt lại; đối chiếu booking, vé và trạng thái ghế trong database. |
+| **Hiệu năng** | Điều tra lỗi đăng nhập dưới tải; tối ưu truy vấn sơ đồ ghế, dữ liệu trả về, index và connection pool dựa trên phép đo. | So sánh throughput thành công, P95/P99 và tỷ lệ lỗi trước/sau trên cùng môi trường, dữ liệu và mức tải. |
+| **Độ tin cậy và khả năng phục hồi** | Bổ sung worker giải phóng hold hết hạn; bảo đảm không giải phóng ghế vừa được gia hạn hoặc đặt thành công. | Kiểm thử hết hạn, bỏ dở thao tác, khởi động lại backend và tranh chấp với worker. |
+| **Khả năng mở rộng** | Thử Redis cho dữ liệu phim/rạp để giảm tải đọc database; có TTL, xóa cache khi cập nhật và fallback về MySQL. MySQL tiếp tục quyết định quyền sở hữu ghế. | Tăng dần tải, đo cache hit rate, throughput và độ trễ; kiểm tra dữ liệu sau cập nhật hoặc khi Redis lỗi. |
+| **Khả năng bảo trì và kiểm thử** | Chuẩn hóa xử lý lỗi, ranh giới Service/Repository và bổ sung kiểm thử tự động cho nghiệp vụ quan trọng. | Chạy test nghiệp vụ/API, typecheck/build và đánh giá phạm vi ảnh hưởng khi thay đổi quy tắc đặt vé. |
+| **Khả năng quan sát** | Bổ sung request ID, log có cấu trúc, số liệu thời gian xử lý và readiness kiểm tra database. | Truy vết request lỗi qua log, phân biệt lỗi nghiệp vụ với lỗi hệ thống và xác nhận hành vi khi database/migration gặp lỗi. |
+| **Tính dễ sử dụng** | Hoàn thiện giao diện quản trị và nghiên cứu SSE/WebSocket để cập nhật trạng thái ghế, kèm xử lý mất kết nối. | Kiểm thử xuyên suốt các thao tác quản trị/đặt vé; đo độ trễ cập nhật ghế và kiểm tra giao diện sau khi kết nối lại. |
+| **Khả năng tương tác và bảo mật** | Tích hợp cổng thanh toán sandbox, xác minh callback và xử lý thông báo thanh toán lặp. | Kiểm thử callback hợp lệ, giả mạo, lặp, thất bại và đến muộn; đối chiếu trạng thái thanh toán với booking. |
