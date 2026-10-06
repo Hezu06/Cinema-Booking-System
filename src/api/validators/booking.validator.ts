@@ -7,6 +7,10 @@ export const bookingIdParamSchema = z.object({
   id: uuidSchema,
 });
 
+export const cancelBookingSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+
 export const createBookingSchema = z.object({
   showtimeId: uuidSchema,
   showtimeSeatIds: z

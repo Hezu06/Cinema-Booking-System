@@ -189,13 +189,33 @@ enum TicketStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  VNPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Booking {
   id          String        @id @default(uuid())
   userId      String        @map("user_id")
   showtimeId  String        @map("showtime_id")
   bookingCode String        @unique @map("booking_code")
   totalAmount Decimal       @db.Decimal(10, 2) @map("total_amount")
-  status      BookingStatus @default(CONFIRMED)
+  status      BookingStatus @default(PENDING)
+  expiresAt   DateTime?     @map("expires_at")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
@@ -203,6 +223,7 @@ model Booking {
   showtime     Showtime      @relation(fields: [showtimeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   bookingSeats BookingSeat[]
   tickets      Ticket[]
+  payments     Payment[]
 
   @@index([userId])
   @@index([showtimeId])
@@ -213,7 +234,7 @@ model Booking {
 model BookingSeat {
   id             String   @id @default(uuid())
   bookingId      String   @map("booking_id")
-  showtimeSeatId String   @map("showtime_seat_id")
+    showtimeSeatId String   @map("showtime_seat_id")
   price          Decimal  @db.Decimal(10, 2)
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -221,9 +242,9 @@ model BookingSeat {
   showtimeSeat ShowtimeSeat @relation(fields: [showtimeSeatId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   ticket       Ticket?
 
-  @@unique([bookingId, showtimeSeatId])
-  @@index([showtimeSeatId])
-  @@map("booking_seats")
+    @@unique([bookingId, showtimeSeatId])
+    @@index([showtimeSeatId])
+    @@map("booking_seats")
 }
 
 model Ticket {
@@ -241,4 +262,44 @@ model Ticket {
 
   @@index([bookingId])
   @@map("tickets")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  bookingId         String        @map("booking_id")
+  txnRef            String        @unique @map("txn_ref")
+  amount            Decimal       @db.Decimal(10, 2)
+  method            PaymentMethod @default(VNPAY)
+  status            PaymentStatus @default(PENDING)
+  transactionNo     String?       @unique @map("transaction_no")
+  bankCode          String?       @map("bank_code")
+  responseCode      String?       @map("response_code")
+  transactionStatus String?       @map("transaction_status")
+  payDate           DateTime?     @map("pay_date")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  refund  Refund?
+
+  @@index([bookingId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Refund {
+  id          String       @id @default(uuid())
+  paymentId   String       @unique @map("payment_id")
+  refundCode  String       @unique @map("refund_code")
+  amount      Decimal      @db.Decimal(10, 2)
+  reason      String?      @db.Text
+  status      RefundStatus @default(PENDING)
+  completedAt DateTime?    @map("completed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status])
+  @@map("refunds")
 }

@@ -1,4 +1,4 @@
-import type { ApiResponse, HoldSeatsResponse } from '../types';
+import type { ApiResponse, HoldSeatsResponse, Payment } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -103,5 +103,14 @@ export const api = {
   cancelBooking: (id: string) =>
     request(`/bookings/${id}/cancel`, {
       method: 'POST',
+      body: JSON.stringify({ reason: 'Customer cancelled booking' }),
     }),
+
+  createVnpayPayment: (bookingId: string, bankCode?: string) =>
+    request<{ payment: Payment; paymentUrl: string }>('/payments/vnpay/create', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, ...(bankCode ? { bankCode } : {}) }),
+    }),
+  getBookingPayments: (bookingId: string) =>
+    request<Payment[]>(`/payments/booking/${bookingId}`),
 };

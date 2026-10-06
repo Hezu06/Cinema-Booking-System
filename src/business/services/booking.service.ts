@@ -81,7 +81,6 @@ export class BookingService {
     }
 
     const bookingCode = generateBookingCode();
-    const ticketCodeGenerator = (index: number) => `${bookingCode}-${index + 1}`;
 
     const createData: CreateBookingData = {
       userId,
@@ -92,7 +91,6 @@ export class BookingService {
     return this.bookingRepository.createWithSeats(
       createData,
       bookingCode,
-      ticketCodeGenerator,
     );
   }
 
@@ -117,6 +115,7 @@ export class BookingService {
   async cancelBooking(
     id: string,
     user: { userId: string; role: string },
+    reason?: string,
   ): Promise<BookingDetail | null> {
     const current = await this.bookingRepository.findById(id);
     if (!current) return null;
@@ -125,7 +124,7 @@ export class BookingService {
       throw new Error("FORBIDDEN");
     }
 
-    return this.bookingRepository.cancel(id);
+    return this.bookingRepository.cancel(id, reason);
   }
 
   async getAllBookings(filters?: BookingFilters): Promise<BookingDetail[]> {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Ticket, Clock, Trash2, Eye, ChevronRight } from 'lucide-react';
+import { Ticket, Clock, Trash2, Eye, ChevronRight, CreditCard } from 'lucide-react';
 import type { BookingDetail } from '../types';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -9,8 +9,10 @@ export const MyBookingsPage: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [bookings, setBookings] = useState<BookingDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'CANCELLED'>('ALL');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -32,9 +34,18 @@ export const MyBookingsPage: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const handleCancelBooking = async (bookingId: string) => {
+    const booking = bookings.find((item) => item.id === bookingId);
+    const refundNotice = booking?.status === 'CONFIRMED'
+      ? ' Khoản tiền sẽ được ghi nhận hoàn tiền mô phỏng nếu suất chiếu còn ít nhất 2 giờ.'
+      : '';
     const confirmed = window.confirm(
-      'Bạn có chắc chắn muốn hủy đơn đặt vé này không? Toàn bộ ghế sẽ được hoàn trả về trạng thái trống.'
+      `Bạn có chắc chắn muốn hủy đơn đặt vé này không? Toàn bộ ghế sẽ được trả về trạng thái trống.${refundNotice}`
     );
     if (!confirmed) return;
 
@@ -51,6 +62,23 @@ export const MyBookingsPage: React.FC = () => {
       alert(err.message || 'Đã có lỗi xảy ra.');
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handlePayBooking = async (bookingId: string) => {
+    setPayingId(bookingId);
+    try {
+      const res = await api.createVnpayPayment(bookingId);
+      if (res.success && res.data?.paymentUrl) {
+        sessionStorage.setItem('ticketor_pending_booking_id', bookingId);
+        window.location.assign(res.data.paymentUrl);
+        return;
+      }
+      alert(res.message || 'Không thể tạo yêu cầu thanh toán VNPAY.');
+    } catch (err: any) {
+      alert(err.message || 'Đã có lỗi khi tạo yêu cầu thanh toán.');
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -78,6 +106,17 @@ export const MyBookingsPage: React.FC = () => {
     if (statusFilter === 'ALL') return true;
     return b.status === statusFilter;
   });
+  const activePendingBookings = bookings.filter((booking) =>
+    booking.status === 'PENDING'
+    && !!booking.expiresAt
+    && new Date(booking.expiresAt).getTime() > now
+  );
+
+  const formatRemaining = (expiresAt?: string | null) => {
+    if (!expiresAt) return '00:00';
+    const seconds = Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000));
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  };
 
   const formatShowtimeDateTime = (isoString: string) => {
     const d = new Date(isoString);
@@ -109,6 +148,16 @@ export const MyBookingsPage: React.FC = () => {
             Tất cả ({bookings.length})
           </button>
           <button
+            onClick={() => setStatusFilter('PENDING')}
+            className={`px-3 py-1.5 rounded-lg transition ${
+              statusFilter === 'PENDING'
+                ? 'bg-brand-primary text-gray-950 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Chờ thanh toán
+          </button>
+          <button
             onClick={() => setStatusFilter('CONFIRMED')}
             className={`px-3 py-1.5 rounded-lg transition ${
               statusFilter === 'CONFIRMED'
@@ -131,6 +180,69 @@ export const MyBookingsPage: React.FC = () => {
         </div>
       </div>
 
+      {!isLoading && activePendingBookings.length > 0 && (
+        <section className="mb-8 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-bold text-white">
+                <Clock size={18} className="text-amber-300" />
+                Vé đang chờ thanh toán
+              </h2>
+              <p className="mt-1 text-xs text-gray-400">
+                Hoàn tất thanh toán trước khi hết thời gian giữ ghế.
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-400 px-2.5 py-1 text-xs font-black text-gray-950">
+              {activePendingBookings.length}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {activePendingBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-[#12121A] p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <img
+                    src={booking.showtime.movie.posterUrl}
+                    alt={booking.showtime.movie.title}
+                    className="h-16 w-12 shrink-0 rounded-lg object-cover"
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-white">{booking.showtime.movie.title}</div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      {booking.bookingCode} · Ghế {booking.bookingSeats.map((item) => `${item.seat.rowLabel}${item.seat.seatNumber}`).join(', ')}
+                    </div>
+                    <div className="mt-1 text-xs font-semibold text-amber-300">
+                      Còn lại <span className="font-mono text-sm">{formatRemaining(booking.expiresAt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => handlePayBooking(booking.id)}
+                    disabled={payingId === booking.id}
+                    className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-gray-950 disabled:opacity-50"
+                  >
+                    <CreditCard size={14} />
+                    {payingId === booking.id ? 'Đang chuyển...' : 'Thanh toán ngay'}
+                  </button>
+                  <button
+                    onClick={() => handleCancelBooking(booking.id)}
+                    disabled={cancellingId === booking.id}
+                    className="rounded-xl border border-red-800/60 bg-red-950/30 px-3 py-2.5 text-xs font-semibold text-red-300 disabled:opacity-50"
+                  >
+                    {cancellingId === booking.id ? 'Đang hủy...' : 'Hủy'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Bookings List */}
       {isLoading ? (
         <div className="space-y-4">
@@ -142,6 +254,26 @@ export const MyBookingsPage: React.FC = () => {
         <div className="space-y-4">
           {filteredBookings.map((b) => {
             const isConfirmed = b.status === 'CONFIRMED';
+            const isPending = b.status === 'PENDING';
+            const statusView = {
+              PENDING: {
+                label: 'Chờ thanh toán',
+                className: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+              },
+              CONFIRMED: {
+                label: 'Đã xác nhận',
+                className: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+              },
+              CANCELLED: {
+                label: 'Đã hủy',
+                className: 'bg-red-500/15 text-red-400 border border-red-500/30',
+              },
+              EXPIRED: {
+                label: 'Đã hết hạn',
+                className: 'bg-gray-500/15 text-gray-300 border border-gray-500/30',
+              },
+            }[b.status];
+            const successfulRefund = b.payments?.find((payment) => payment.refund?.status === 'SUCCESS')?.refund;
 
             return (
               <div
@@ -162,14 +294,15 @@ export const MyBookingsPage: React.FC = () => {
                         {b.bookingCode}
                       </span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                          isConfirmed
-                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-red-500/15 text-red-400 border border-red-500/30'
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${statusView.className}`}
                       >
-                        {isConfirmed ? 'Đã xác nhận' : 'Đã hủy'}
+                        {statusView.label}
                       </span>
+                      {successfulRefund && (
+                        <span className="text-[10px] font-semibold text-sky-300">
+                          Đã hoàn mô phỏng {Number(successfulRefund.amount).toLocaleString('vi-VN')} đ
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="font-bold text-white text-base leading-snug line-clamp-1">
@@ -209,15 +342,28 @@ export const MyBookingsPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link
-                      to={`/ticket/${b.id}`}
-                      className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition"
-                    >
-                      <Eye size={14} />
-                      <span>Xem vé</span>
-                    </Link>
-
                     {isConfirmed && (
+                      <Link
+                        to={`/ticket/${b.id}`}
+                        className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition"
+                      >
+                        <Eye size={14} />
+                        <span>Xem vé</span>
+                      </Link>
+                    )}
+
+                    {isPending && (
+                      <button
+                        onClick={() => handlePayBooking(b.id)}
+                        disabled={payingId === b.id}
+                        className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition disabled:opacity-50"
+                      >
+                        <CreditCard size={14} />
+                        <span>{payingId === b.id ? 'Đang chuyển...' : 'Thanh toán'}</span>
+                      </button>
+                    )}
+
+                    {(isConfirmed || isPending) && (
                       <button
                         onClick={() => handleCancelBooking(b.id)}
                         disabled={cancellingId === b.id}
