@@ -12,6 +12,7 @@ import { SeatSelectionPage } from './pages/SeatSelectionPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { TicketSuccessPage } from './pages/TicketSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { MyBookingsPage } from './pages/MyBookingsPage';
 import { PaymentResultPage } from './pages/PaymentResultPage';
 
 export function App() {
@@ -49,7 +50,7 @@ export function App() {
 
               {/* User Profile & My Tickets */}
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/my-bookings" element={<ProfilePage />} />
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
             </Routes>
           </main>
           <Footer />
