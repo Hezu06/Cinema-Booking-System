@@ -12,9 +12,9 @@ export const bookingPaths = {
     post: {
       tags: ["Bookings"],
       security: bearer,
-      summary: "Đặt vé xem phim (Customer & Admin)",
+      summary: "Tạo Booking chờ thanh toán (Customer & Admin)",
       description:
-        "Đặt một hoặc nhiều ghế trong cùng một suất chiếu. Yêu cầu đăng nhập. Hệ thống tự động kiểm tra trạng thái ghế, tính tổng tiền, tạo mã booking và xuất vé.",
+        "Tạo Booking PENDING từ các ghế người dùng đang giữ. Vé chỉ được tạo sau khi VNPAY IPN xác nhận thanh toán.",
       requestBody: {
         required: true,
         content: {
@@ -97,12 +97,23 @@ export const bookingPaths = {
     post: {
       tags: ["Bookings"],
       security: bearer,
-      summary: "Hủy đơn đặt vé và tự động giải phóng ghế",
-      description:
-        "Hủy đơn đặt vé trước giờ chiếu. Hệ thống sẽ đổi trạng thái booking thành CANCELLED và tự động trả các ghế liên quan về trạng thái AVAILABLE.",
-      parameters: [idParameter],
-      responses: {
-        "200": { description: "Hủy vé thành công và đã nhả lại ghế trống" },
+        summary: "Hủy đơn đặt vé và tự động giải phóng ghế",
+        description:
+          "Booking đã thanh toán chỉ được hủy trước giờ chiếu ít nhất 2 giờ. Hệ thống trả ghế về AVAILABLE và ghi nhận hoàn tiền toàn phần mô phỏng; không gọi VNPAY Refund API.",
+        parameters: [idParameter],
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: { reason: { type: "string", maxLength: 500 } },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Hủy vé, nhả ghế và hoàn tiền mô phỏng thành công" },
         "401": { description: "Chưa đăng nhập" },
         "403": { description: "Không có quyền hủy vé của người khác" },
         "404": { description: "Đơn đặt vé không tồn tại" },

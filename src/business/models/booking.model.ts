@@ -22,6 +22,7 @@ export interface Booking {
   bookingCode: string;
   totalAmount: number;
   status: BookingStatus;
+  expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,4 +90,22 @@ export interface BookingDetail extends Booking {
   };
   bookingSeats: BookingSeatDetail[];
   tickets: TicketView[];
+  payments?: Array<{
+    id: string;
+    txnRef: string;
+    amount: number;
+    method: string;
+    status: string;
+    transactionNo: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    refund?: {
+      id: string;
+      refundCode: string;
+      amount: number;
+      reason: string | null;
+      status: string;
+      completedAt: Date | null;
+    } | null;
+  }>;
 }

@@ -99,6 +99,7 @@ export interface BookingDetail {
   bookingCode: string;
   totalAmount: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+  expiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -136,6 +137,31 @@ export interface BookingDetail {
   };
   bookingSeats: BookingSeat[];
   tickets: Ticket[];
+  payments?: Payment[];
+}
+
+export interface Refund {
+  id: string;
+  paymentId: string;
+  refundCode: string;
+  amount: number;
+  reason?: string | null;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  completedAt?: string | null;
+}
+
+export interface Payment {
+  id: string;
+  bookingId: string;
+  txnRef: string;
+  amount: number;
+  method: 'VNPAY';
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'REFUND_PENDING' | 'REFUNDED';
+  transactionNo?: string | null;
+  responseCode?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  refund?: Refund | null;
 }
 
 export interface ApiResponse<T = any> {

@@ -40,12 +40,11 @@ export interface BookingRepository {
   createWithSeats(
     data: CreateBookingData,
     bookingCode: string,
-    ticketCodeGenerator: (index: number) => string,
   ): Promise<BookingDetail>;
   holdSeats(data: HoldSeatsData, expiresAt: Date): Promise<HoldSeatsResult>;
   releaseSeats(data: ReleaseSeatsData): Promise<number>;
   findById(id: string): Promise<BookingDetail | null>;
   findByCode(bookingCode: string): Promise<BookingDetail | null>;
   findAll(filters?: BookingFilters): Promise<BookingDetail[]>;
-  cancel(id: string): Promise<BookingDetail | null>;
+  cancel(id: string, reason?: string): Promise<BookingDetail | null>;
 }

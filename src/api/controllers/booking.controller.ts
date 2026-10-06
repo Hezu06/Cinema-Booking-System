@@ -4,6 +4,7 @@ import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
 import {
   bookingIdParamSchema,
   bookingQuerySchema,
+  cancelBookingSchema,
   createBookingSchema,
   holdSeatsSchema,
   releaseSeatsSchema,
@@ -62,6 +63,10 @@ function handleBookingError(error: unknown, response: Response): boolean {
       });
       return true;
 
+    case "HOLD_REQUIRED":
+      response.status(409).json({ success: false, message: "Vui lòng giữ ghế trước khi tạo booking" });
+      return true;
+
     case "NO_SEATS_SPECIFIED":
       response.status(400).json({
         success: false,
@@ -88,6 +93,22 @@ function handleBookingError(error: unknown, response: Response): boolean {
         success: false,
         message: "Đơn đặt vé này đã bị hủy trước đó",
       });
+      return true;
+
+    case "BOOKING_EXPIRED":
+      response.status(409).json({ success: false, message: "Booking đã hết hạn thanh toán" });
+      return true;
+
+    case "CANCELLATION_WINDOW_CLOSED":
+      response.status(409).json({ success: false, message: "Chỉ có thể hủy vé trước giờ chiếu ít nhất 2 giờ" });
+      return true;
+
+    case "TICKET_ALREADY_USED":
+      response.status(409).json({ success: false, message: "Không thể hủy vì vé đã được sử dụng" });
+      return true;
+
+    case "PAYMENT_ALREADY_REFUNDED":
+      response.status(409).json({ success: false, message: "Booking này đã được hoàn tiền" });
       return true;
 
     case "FORBIDDEN":
@@ -190,7 +211,7 @@ export class BookingController {
 
       return response.status(201).json({
         success: true,
-        message: "Booking confirmed successfully",
+        message: "Booking created and awaiting payment",
         data: booking,
       });
     } catch (error) {
@@ -275,11 +296,16 @@ export class BookingController {
         errors: paramResult.error.issues,
       });
     }
+    const bodyResult = cancelBookingSchema.safeParse(request.body ?? {});
+    if (!bodyResult.success) {
+      return response.status(400).json({ success: false, message: "Validation failed", errors: bodyResult.error.issues });
+    }
 
     try {
       const booking = await this.bookingService.cancelBooking(
         paramResult.data.id,
         user,
+        bodyResult.data.reason,
       );
 
       if (!booking) {
@@ -291,7 +317,7 @@ export class BookingController {
 
       return response.status(200).json({
         success: true,
-        message: "Booking cancelled successfully and seats released",
+        message: "Booking cancelled, seats released and refund simulated successfully",
         data: booking,
       });
     } catch (error) {

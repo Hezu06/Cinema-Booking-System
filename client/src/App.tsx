@@ -12,6 +12,7 @@ import { SeatSelectionPage } from './pages/SeatSelectionPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { TicketSuccessPage } from './pages/TicketSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { PaymentResultPage } from './pages/PaymentResultPage';
 
 export function App() {
   return (
@@ -44,6 +45,7 @@ export function App() {
 
               {/* Booking Flow: Step 3 Ticket Success */}
               <Route path="/ticket/:bookingId" element={<TicketSuccessPage />} />
+              <Route path="/payment/result" element={<PaymentResultPage />} />
 
               {/* User Profile & My Tickets */}
               <Route path="/profile" element={<ProfilePage />} />
