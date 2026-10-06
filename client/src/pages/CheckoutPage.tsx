@@ -11,7 +11,7 @@ export const CheckoutPage: React.FC = () => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
 
   const [bookingDraft, setBookingDraft] = useState<any>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOMO' | 'VNPAY' | 'ZALOPAY' | 'APPLE'>('CARD');
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOMO' | 'VNPAY' | 'ZALOPAY' | 'APPLE'>('VNPAY');
 
   // Card form state matching Figma
   const [cardNumber, setCardNumber] = useState('9704 2201 8492 5618');
@@ -23,6 +23,7 @@ export const CheckoutPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
   // Seat hold timer states
   const [holdExpiresAt, setHoldExpiresAt] = useState<Date | null>(null);
@@ -107,26 +108,47 @@ export const CheckoutPage: React.FC = () => {
       return;
     }
 
+    if (paymentMethod !== 'VNPAY') {
+      setError('Giai đoạn này chỉ hỗ trợ thanh toán mô phỏng qua VNPAY Sandbox.');
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
 
     try {
-      const seatIds = selectedSeats.map((s: any) => s.id);
-      const res = await api.createBooking({
-        showtimeId: showtime.id,
-        showtimeSeatIds: seatIds,
-      });
+      let bookingId = pendingBookingId;
+      let bookingCode: string | undefined;
 
-      if (!res.success || !res.data) {
-        throw new Error(res.message || 'Xử lý đặt vé thất bại. Vui lòng thử lại.');
+      if (!bookingId) {
+        const seatIds = selectedSeats.map((s: any) => s.id);
+        const res = await api.createBooking({
+          showtimeId: showtime.id,
+          showtimeSeatIds: seatIds,
+        });
+
+        if (!res.success || !res.data) {
+          throw new Error(res.message || 'Xử lý đặt vé thất bại. Vui lòng thử lại.');
+        }
+
+        bookingId = res.data.id;
+        bookingCode = res.data.bookingCode;
+        setPendingBookingId(bookingId);
+      }
+
+      if (!bookingId) throw new Error('Không xác định được booking cần thanh toán.');
+      const activeBookingId = bookingId;
+      const paymentRes = await api.createVnpayPayment(activeBookingId);
+      if (!paymentRes.success || !paymentRes.data?.paymentUrl) {
+        throw new Error(paymentRes.message || 'Không thể tạo liên kết thanh toán VNPAY.');
       }
 
       // Save receipt state with populated data
       sessionStorage.setItem(
         'ticketor_latest_receipt',
         JSON.stringify({
-          bookingId: res.data.id,
-          bookingCode: res.data.bookingCode || res.data.id.slice(0, 8).toUpperCase(),
+          bookingId: activeBookingId,
+          bookingCode: bookingCode || activeBookingId.slice(0, 8).toUpperCase(),
           movie,
           cinema,
           showtime,
@@ -141,7 +163,8 @@ export const CheckoutPage: React.FC = () => {
       );
 
       sessionStorage.removeItem('ticketor_booking_draft');
-      navigate(`/ticket/${res.data.id}`);
+      sessionStorage.setItem('ticketor_pending_booking_id', activeBookingId);
+      window.location.assign(paymentRes.data.paymentUrl);
     } catch (err: any) {
       console.error('Booking checkout error:', err);
       setError(err.message || 'Đặt vé thất bại. Một số ghế có thể đã hết hạn giữ chỗ hoặc được người khác đặt trước.');
@@ -324,11 +347,7 @@ export const CheckoutPage: React.FC = () => {
             {/* Payment Method Radio Options */}
             <div className="space-y-3">
               {[
-                { id: 'CARD', label: 'Thẻ Quốc tế / Thẻ Nội địa' },
-                { id: 'MOMO', label: 'Ví MoMo' },
-                { id: 'VNPAY', label: 'VNPAY QR' },
-                { id: 'ZALOPAY', label: 'Ví ZaloPay' },
-                { id: 'APPLE', label: 'Apple Pay / Google Pay' },
+                { id: 'VNPAY', label: 'VNPAY Sandbox (không trừ tiền thật)' },
               ].map((opt) => (
                 <label
                   key={opt.id}
@@ -433,9 +452,9 @@ export const CheckoutPage: React.FC = () => {
                   QR
                 </div>
                 <div className="text-xs text-[#A0A0B0]">
-                  <p className="font-semibold text-white">Thanh toán tức thì</p>
+                  <p className="font-semibold text-white">Thanh toán thử nghiệm qua VNPAY Sandbox</p>
                   <p className="text-[11px] text-[#707085] mt-0.5">
-                    Sau khi bấm Hoàn tất, bạn sẽ được tự động kích hoạt thanh toán an toàn và nhận vé điện tử ngay.
+                    Bạn sẽ được chuyển sang cổng VNPAY Sandbox. Không có tiền thật bị trừ; vé chỉ được tạo sau khi callback thanh toán thành công.
                   </p>
                 </div>
               </div>
@@ -514,10 +533,10 @@ export const CheckoutPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>Đang xác nhận đặt vé...</span>
+                    <span>Đang tạo liên kết VNPAY...</span>
                   </>
                 ) : (
-                  <span>Hoàn tất thanh toán</span>
+                  <span>Thanh toán qua VNPAY Sandbox</span>
                 )}
               </button>
 

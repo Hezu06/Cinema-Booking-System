@@ -9,6 +9,7 @@ import roomRouter from "./api/routes/room.routes.js";
 import seatRouter from "./api/routes/seat.routes.js";
 import showtimeRouter from "./api/routes/showtime.routes.js";
 import bookingRouter from "./api/routes/booking.routes.js";
+import paymentRouter from "./api/routes/payment.routes.js";
 
 import {
   setupSwagger,
@@ -42,5 +43,6 @@ app.use("/api/rooms", roomRouter);
 app.use("/api/seats", seatRouter);
 app.use("/api/showtimes", showtimeRouter);
 app.use("/api/bookings", bookingRouter);
+app.use("/api/payments", paymentRouter);
 
 export default app;

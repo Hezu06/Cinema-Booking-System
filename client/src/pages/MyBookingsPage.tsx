@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Ticket, Clock, Trash2, Eye, ChevronRight } from 'lucide-react';
+import { Ticket, Clock, Trash2, Eye, ChevronRight, CreditCard } from 'lucide-react';
 import type { BookingDetail } from '../types';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -9,8 +9,9 @@ export const MyBookingsPage: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [bookings, setBookings] = useState<BookingDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'CANCELLED'>('ALL');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -33,8 +34,12 @@ export const MyBookingsPage: React.FC = () => {
   }, [isAuthenticated]);
 
   const handleCancelBooking = async (bookingId: string) => {
+    const booking = bookings.find((item) => item.id === bookingId);
+    const refundNotice = booking?.status === 'CONFIRMED'
+      ? ' Khoản tiền sẽ được ghi nhận hoàn tiền mô phỏng nếu suất chiếu còn ít nhất 2 giờ.'
+      : '';
     const confirmed = window.confirm(
-      'Bạn có chắc chắn muốn hủy đơn đặt vé này không? Toàn bộ ghế sẽ được hoàn trả về trạng thái trống.'
+      `Bạn có chắc chắn muốn hủy đơn đặt vé này không? Toàn bộ ghế sẽ được trả về trạng thái trống.${refundNotice}`
     );
     if (!confirmed) return;
 
@@ -51,6 +56,23 @@ export const MyBookingsPage: React.FC = () => {
       alert(err.message || 'Đã có lỗi xảy ra.');
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handlePayBooking = async (bookingId: string) => {
+    setPayingId(bookingId);
+    try {
+      const res = await api.createVnpayPayment(bookingId);
+      if (res.success && res.data?.paymentUrl) {
+        sessionStorage.setItem('ticketor_pending_booking_id', bookingId);
+        window.location.assign(res.data.paymentUrl);
+        return;
+      }
+      alert(res.message || 'Không thể tạo yêu cầu thanh toán VNPAY.');
+    } catch (err: any) {
+      alert(err.message || 'Đã có lỗi khi tạo yêu cầu thanh toán.');
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -109,6 +131,16 @@ export const MyBookingsPage: React.FC = () => {
             Tất cả ({bookings.length})
           </button>
           <button
+            onClick={() => setStatusFilter('PENDING')}
+            className={`px-3 py-1.5 rounded-lg transition ${
+              statusFilter === 'PENDING'
+                ? 'bg-brand-primary text-gray-950 font-bold'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Chờ thanh toán
+          </button>
+          <button
             onClick={() => setStatusFilter('CONFIRMED')}
             className={`px-3 py-1.5 rounded-lg transition ${
               statusFilter === 'CONFIRMED'
@@ -142,6 +174,26 @@ export const MyBookingsPage: React.FC = () => {
         <div className="space-y-4">
           {filteredBookings.map((b) => {
             const isConfirmed = b.status === 'CONFIRMED';
+            const isPending = b.status === 'PENDING';
+            const statusView = {
+              PENDING: {
+                label: 'Chờ thanh toán',
+                className: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+              },
+              CONFIRMED: {
+                label: 'Đã xác nhận',
+                className: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+              },
+              CANCELLED: {
+                label: 'Đã hủy',
+                className: 'bg-red-500/15 text-red-400 border border-red-500/30',
+              },
+              EXPIRED: {
+                label: 'Đã hết hạn',
+                className: 'bg-gray-500/15 text-gray-300 border border-gray-500/30',
+              },
+            }[b.status];
+            const successfulRefund = b.payments?.find((payment) => payment.refund?.status === 'SUCCESS')?.refund;
 
             return (
               <div
@@ -162,14 +214,15 @@ export const MyBookingsPage: React.FC = () => {
                         {b.bookingCode}
                       </span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                          isConfirmed
-                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-red-500/15 text-red-400 border border-red-500/30'
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${statusView.className}`}
                       >
-                        {isConfirmed ? 'Đã xác nhận' : 'Đã hủy'}
+                        {statusView.label}
                       </span>
+                      {successfulRefund && (
+                        <span className="text-[10px] font-semibold text-sky-300">
+                          Đã hoàn mô phỏng {Number(successfulRefund.amount).toLocaleString('vi-VN')} đ
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="font-bold text-white text-base leading-snug line-clamp-1">
@@ -209,15 +262,28 @@ export const MyBookingsPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link
-                      to={`/ticket/${b.id}`}
-                      className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition"
-                    >
-                      <Eye size={14} />
-                      <span>Xem vé</span>
-                    </Link>
-
                     {isConfirmed && (
+                      <Link
+                        to={`/ticket/${b.id}`}
+                        className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition"
+                      >
+                        <Eye size={14} />
+                        <span>Xem vé</span>
+                      </Link>
+                    )}
+
+                    {isPending && (
+                      <button
+                        onClick={() => handlePayBooking(b.id)}
+                        disabled={payingId === b.id}
+                        className="py-2 px-3 bg-brand-primary hover:bg-brand-primaryHover text-gray-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-neon transition disabled:opacity-50"
+                      >
+                        <CreditCard size={14} />
+                        <span>{payingId === b.id ? 'Đang chuyển...' : 'Thanh toán'}</span>
+                      </button>
+                    )}
+
+                    {(isConfirmed || isPending) && (
                       <button
                         onClick={() => handleCancelBooking(b.id)}
                         disabled={cancellingId === b.id}

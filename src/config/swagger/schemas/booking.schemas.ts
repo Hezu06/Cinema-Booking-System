@@ -51,8 +51,9 @@ export const bookingSchemas = {
       status: {
         type: "string",
         enum: ["PENDING", "CONFIRMED", "CANCELLED", "EXPIRED"],
-        example: "CONFIRMED",
+        example: "PENDING",
       },
+      expiresAt: { type: "string", format: "date-time", nullable: true },
       createdAt: { type: "string", format: "date-time" },
       updatedAt: { type: "string", format: "date-time" },
       showtime: { $ref: "#/components/schemas/Showtime" },

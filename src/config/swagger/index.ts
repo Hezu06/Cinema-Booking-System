@@ -13,6 +13,7 @@ import { bookingSchemas } from "./schemas/booking.schemas.js";
 import { roomSchemas } from "./schemas/room.schemas.js";
 import { seatSchemas } from "./schemas/seat.schemas.js";
 import { showtimeSchemas } from "./schemas/showtime.schemas.js";
+import { paymentSchemas } from "./schemas/payment.schemas.js";
 
 import { commonPaths } from "./paths/common.paths.js";
 
@@ -26,6 +27,7 @@ import { bookingPaths } from "./paths/booking.paths.js";
 import { roomPaths } from "./paths/room.paths.js";
 import { seatPaths } from "./paths/seat.paths.js";
 import { showtimePaths } from "./paths/showtime.paths.js";
+import { paymentPaths } from "./paths/payment.paths.js";
 
 const swaggerDocument = {
     openapi: "3.0.3",
@@ -71,6 +73,7 @@ const swaggerDocument = {
         { name: "Seats", description: "Seat management APIs" },
         { name: "Showtimes", description: "Showtime and availability APIs" },
         { name: "Bookings", description: "Movie ticket booking APIs" },
+        { name: "Payments", description: "VNPAY Sandbox payment and simulated refund APIs" },
     ],
 
     components: {
@@ -91,6 +94,7 @@ const swaggerDocument = {
             ...seatSchemas,
             ...showtimeSchemas,
             ...bookingSchemas,
+            ...paymentSchemas,
         },
     },
 
@@ -103,6 +107,7 @@ const swaggerDocument = {
         ...seatPaths,
         ...showtimePaths,
         ...bookingPaths,
+        ...paymentPaths,
     },
 };
 
