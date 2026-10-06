@@ -18,6 +18,12 @@ export const TimeSelectionPage: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<'All' | 'Standard' | 'IMAX' | '3D'>('All');
   const [selectedCinemaFilter, setSelectedCinemaFilter] = useState('All');
   const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -32,10 +38,14 @@ export const TimeSelectionPage: React.FC = () => {
           setMovie(movieRes.data);
         }
         if (showtimesRes.success && showtimesRes.data) {
-          setShowtimes(showtimesRes.data);
+          const upcomingShowtimes = (showtimesRes.data as Showtime[]).filter(
+            (showtime: Showtime) => showtime.status === 'SCHEDULED'
+              && new Date(showtime.startTime).getTime() > Date.now()
+          );
+          setShowtimes(upcomingShowtimes);
           // Set initial date from first showtime if available
-          if (showtimesRes.data.length > 0) {
-            const firstDate = new Date(showtimesRes.data[0].startTime).toISOString().split('T')[0];
+          if (upcomingShowtimes.length > 0) {
+            const firstDate = new Date(upcomingShowtimes[0].startTime).toISOString().split('T')[0];
             setSelectedDateStr(firstDate);
           }
         }
@@ -78,6 +88,9 @@ export const TimeSelectionPage: React.FC = () => {
 
   // Filter showtimes
   const filteredShowtimes = showtimes.filter((st) => {
+    if (st.status !== 'SCHEDULED' || new Date(st.startTime).getTime() <= currentTime) {
+      return false;
+    }
     // City filter
     if (selectedCity !== 'Tất cả' && st.room?.cinema?.city !== selectedCity) {
       return false;

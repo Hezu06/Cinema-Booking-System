@@ -24,6 +24,7 @@ export const CheckoutPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [pendingBookingCode, setPendingBookingCode] = useState<string | null>(null);
 
   // Seat hold timer states
   const [holdExpiresAt, setHoldExpiresAt] = useState<Date | null>(null);
@@ -42,6 +43,31 @@ export const CheckoutPage: React.FC = () => {
 
     if (draft) {
       setBookingDraft(draft);
+      const storedPendingId = draft.pendingBookingId
+        || sessionStorage.getItem('ticketor_pending_booking_id');
+      if (storedPendingId) {
+        api.getBookingById(storedPendingId).then((res) => {
+          const booking = res.data;
+          const selectedIds = (draft.selectedSeats || []).map((seat: any) => seat.id).sort();
+          const bookingSeatIds = (booking?.bookingSeats || []).map((seat: any) => seat.showtimeSeatId).sort();
+          const sameSeats = selectedIds.length === bookingSeatIds.length
+            && selectedIds.every((id: string, index: number) => id === bookingSeatIds[index]);
+          const stillActive = booking?.status === 'PENDING'
+            && !!booking.expiresAt
+            && new Date(booking.expiresAt).getTime() > Date.now();
+
+          if (stillActive && booking.showtimeId === draft.showtime?.id && sameSeats) {
+            setPendingBookingId(booking.id);
+            setPendingBookingCode(booking.bookingCode);
+          } else if (sessionStorage.getItem('ticketor_pending_booking_id') === storedPendingId) {
+            sessionStorage.removeItem('ticketor_pending_booking_id');
+          }
+        }).catch(() => {
+          if (sessionStorage.getItem('ticketor_pending_booking_id') === storedPendingId) {
+            sessionStorage.removeItem('ticketor_pending_booking_id');
+          }
+        });
+      }
       if (draft.holdExpiresAt) {
         const expires = new Date(draft.holdExpiresAt);
         setHoldExpiresAt(expires);
@@ -118,7 +144,7 @@ export const CheckoutPage: React.FC = () => {
 
     try {
       let bookingId = pendingBookingId;
-      let bookingCode: string | undefined;
+      let bookingCode: string | undefined = pendingBookingCode || undefined;
 
       if (!bookingId) {
         const seatIds = selectedSeats.map((s: any) => s.id);
@@ -131,9 +157,19 @@ export const CheckoutPage: React.FC = () => {
           throw new Error(res.message || 'Xử lý đặt vé thất bại. Vui lòng thử lại.');
         }
 
-        bookingId = res.data.id;
+        const createdBookingId = res.data.id as string;
+        bookingId = createdBookingId;
         bookingCode = res.data.bookingCode;
-        setPendingBookingId(bookingId);
+        setPendingBookingId(createdBookingId);
+        setPendingBookingCode(bookingCode || null);
+        sessionStorage.setItem('ticketor_pending_booking_id', createdBookingId);
+        const storedDraft = sessionStorage.getItem('ticketor_booking_draft');
+        if (storedDraft) {
+          sessionStorage.setItem(
+            'ticketor_booking_draft',
+            JSON.stringify({ ...JSON.parse(storedDraft), pendingBookingId: createdBookingId }),
+          );
+        }
       }
 
       if (!bookingId) throw new Error('Không xác định được booking cần thanh toán.');

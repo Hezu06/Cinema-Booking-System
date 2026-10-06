@@ -209,13 +209,27 @@ export class PrismaBookingRepository implements BookingRepository {
 
         // 3. Ensure these seats are not already attached to another active booking.
         const actualShowtimeSeatIds = showtimeSeats.map((s) => s.id);
-        const conflictingBookingSeat = await tx.bookingSeat.findFirst({
+        const conflictingBookings = await tx.booking.findMany({
           where: {
-            showtimeSeatId: { in: actualShowtimeSeatIds },
-            booking: { status: { in: ["PENDING", "CONFIRMED"] } },
+            status: { in: ["PENDING", "CONFIRMED"] },
+            bookingSeats: { some: { showtimeSeatId: { in: actualShowtimeSeatIds } } },
           },
+          include: bookingInclude,
         });
-        if (conflictingBookingSeat) throw new Error("SEATS_ALREADY_BOOKED");
+
+        // Retrying checkout for the same active hold must be idempotent. This
+        // happens when the customer returns from VNPAY, refreshes checkout, or
+        // clicks the payment button again after the booking was already made.
+        const requestedSeatIds = [...actualShowtimeSeatIds].sort();
+        const reusableBooking = conflictingBookings.find((booking) => {
+          if (booking.status !== "PENDING" || booking.userId !== data.userId) return false;
+          if (!booking.expiresAt || booking.expiresAt <= now) return false;
+          const bookedSeatIds = booking.bookingSeats.map((seat) => seat.showtimeSeatId).sort();
+          return bookedSeatIds.length === requestedSeatIds.length
+            && bookedSeatIds.every((seatId, index) => seatId === requestedSeatIds[index]);
+        });
+        if (reusableBooking) return reusableBooking;
+        if (conflictingBookings.length > 0) throw new Error("SEATS_ALREADY_BOOKED");
 
         // 4. Calculate total amount
         const totalAmount = showtimeSeats.reduce((sum, s) => sum + Number(s.price), 0);
