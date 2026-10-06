@@ -7,7 +7,16 @@ import type {
 import type { PaymentView } from "../models/payment.model.js";
 
 function createTxnRef(): string {
-  return `PAY-${Date.now().toString(36).toUpperCase()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+  // VNPAY requires vnp_TxnRef to be alphanumeric. Do not use separators such
+  // as "-" because the SIT portal may accept the payment but fail to index it.
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = randomUUID().replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase();
+  return `PAY${timestamp}${randomPart}`;
+}
+
+function createOrderInfo(bookingCode: string): string {
+  const safeBookingCode = bookingCode.replace(/[^a-zA-Z0-9]/g, "");
+  return `Thanh toan booking ${safeBookingCode}`;
 }
 
 export class PaymentService {
@@ -39,7 +48,7 @@ export class PaymentService {
     const paymentUrl = this.paymentGateway.createPaymentUrl({
       txnRef: payment.txnRef,
       amount: payment.amount,
-      orderInfo: `Thanh toan booking ${booking.bookingCode}`,
+      orderInfo: createOrderInfo(booking.bookingCode),
       ipAddress,
       expireAt: booking.expiresAt,
       bankCode,
