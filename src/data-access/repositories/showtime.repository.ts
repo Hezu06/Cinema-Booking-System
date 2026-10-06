@@ -35,16 +35,18 @@ function mapShowtime(showtime: PopulatedPrismaShowtime): Showtime {
 
 export class PrismaShowtimeRepository implements ShowtimeRepository {
   async findAll(filters: ShowtimeFilters = {}): Promise<Showtime[]> {
+    const now = new Date();
     const nextDay = filters.date ? new Date(filters.date.getTime() + 24 * 60 * 60 * 1000) : undefined;
+    const lowerBound = filters.date && filters.date > now ? filters.date : now;
     const showtimes = await prisma.showtime.findMany({
       where: {
         ...(filters.movieId !== undefined ? { movieId: filters.movieId } : {}),
         ...(filters.roomId !== undefined ? { roomId: filters.roomId } : {}),
         ...(filters.cinemaId !== undefined ? { room: { cinemaId: filters.cinemaId } } : {}),
-        ...(filters.status !== undefined ? { status: filters.status } : {}),
+        status: filters.status ?? "SCHEDULED",
         ...(filters.date !== undefined && nextDay !== undefined
-          ? { startTime: { gte: filters.date, lt: nextDay } }
-          : {}),
+          ? { startTime: { gt: lowerBound, lt: nextDay } }
+          : { startTime: { gt: now } }),
       },
       include: showtimeInclude,
       orderBy: { startTime: "asc" },

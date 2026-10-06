@@ -12,6 +12,7 @@ export const MyBookingsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'CANCELLED'>('ALL');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const fetchBookings = () => {
     setIsLoading(true);
@@ -32,6 +33,11 @@ export const MyBookingsPage: React.FC = () => {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleCancelBooking = async (bookingId: string) => {
     const booking = bookings.find((item) => item.id === bookingId);
@@ -100,6 +106,17 @@ export const MyBookingsPage: React.FC = () => {
     if (statusFilter === 'ALL') return true;
     return b.status === statusFilter;
   });
+  const activePendingBookings = bookings.filter((booking) =>
+    booking.status === 'PENDING'
+    && !!booking.expiresAt
+    && new Date(booking.expiresAt).getTime() > now
+  );
+
+  const formatRemaining = (expiresAt?: string | null) => {
+    if (!expiresAt) return '00:00';
+    const seconds = Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000));
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  };
 
   const formatShowtimeDateTime = (isoString: string) => {
     const d = new Date(isoString);
@@ -162,6 +179,69 @@ export const MyBookingsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {!isLoading && activePendingBookings.length > 0 && (
+        <section className="mb-8 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-bold text-white">
+                <Clock size={18} className="text-amber-300" />
+                Vé đang chờ thanh toán
+              </h2>
+              <p className="mt-1 text-xs text-gray-400">
+                Hoàn tất thanh toán trước khi hết thời gian giữ ghế.
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-400 px-2.5 py-1 text-xs font-black text-gray-950">
+              {activePendingBookings.length}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {activePendingBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-[#12121A] p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <img
+                    src={booking.showtime.movie.posterUrl}
+                    alt={booking.showtime.movie.title}
+                    className="h-16 w-12 shrink-0 rounded-lg object-cover"
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-white">{booking.showtime.movie.title}</div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      {booking.bookingCode} · Ghế {booking.bookingSeats.map((item) => `${item.seat.rowLabel}${item.seat.seatNumber}`).join(', ')}
+                    </div>
+                    <div className="mt-1 text-xs font-semibold text-amber-300">
+                      Còn lại <span className="font-mono text-sm">{formatRemaining(booking.expiresAt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => handlePayBooking(booking.id)}
+                    disabled={payingId === booking.id}
+                    className="flex items-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold text-gray-950 disabled:opacity-50"
+                  >
+                    <CreditCard size={14} />
+                    {payingId === booking.id ? 'Đang chuyển...' : 'Thanh toán ngay'}
+                  </button>
+                  <button
+                    onClick={() => handleCancelBooking(booking.id)}
+                    disabled={cancellingId === booking.id}
+                    className="rounded-xl border border-red-800/60 bg-red-950/30 px-3 py-2.5 text-xs font-semibold text-red-300 disabled:opacity-50"
+                  >
+                    {cancellingId === booking.id ? 'Đang hủy...' : 'Hủy'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Bookings List */}
       {isLoading ? (
