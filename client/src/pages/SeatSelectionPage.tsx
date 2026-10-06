@@ -283,6 +283,8 @@ export const SeatSelectionPage: React.FC = () => {
     if (!showtimeId || !user) return;
     try {
       await api.releaseSeats({ showtimeId, showtimeSeatIds: selectedSeatIds });
+      sessionStorage.removeItem('ticketor_pending_booking_id');
+      sessionStorage.removeItem('ticketor_booking_draft');
       setSelectedSeatIds([]);
       setUserHoldExpiresAt(null);
       setRemainingSeconds(0);
