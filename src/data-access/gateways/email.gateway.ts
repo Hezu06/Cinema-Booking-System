@@ -7,9 +7,14 @@ export class NodeMailerGateway implements EmailService {
     private readonly isConfigured: boolean = false;
 
     constructor() {
-        const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASS;
-        const host = process.env.SMTP_HOST || "smtp.gmail.com";
+        const user = process.env.SMTP_USER?.trim();
+        // Remove spaces commonly copied from Google App Password displays (e.g. "abcd efgh ijkl mnop")
+        const pass = process.env.SMTP_PASS?.replace(/\s+/g, "").trim();
+        let host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+        // Auto-fix if user typed "smtp.com" instead of "smtp.gmail.com"
+        if (host === "smtp.com" && (user?.includes("gmail") || user?.endsWith("@gmail.com"))) {
+            host = "smtp.gmail.com";
+        }
         const port = Number(process.env.SMTP_PORT) || 587;
         const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
@@ -81,6 +86,7 @@ export class NodeMailerGateway implements EmailService {
             return true;
         } catch (error) {
             console.error("❌ Failed to send verification email via SMTP:", error);
+            console.log(`🔑 [FALLBACK LOG] Mã OTP cho ${to}: ${otpCode}`);
             return false;
         }
     }
