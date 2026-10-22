@@ -147,24 +147,17 @@ export async function googleAuth(req: Request, res: Response) {
         }
 
         if (error instanceof Error) {
-            if (
-                error.message.includes("không hợp lệ") ||
-                error.message.includes("hết hạn") ||
-                error.message.includes("Token không khớp") ||
-                error.message.includes("chưa được xác thực")
-            ) {
-                return res.status(401).json({
-                    success: false,
-                    message: error.message,
-                });
-            }
-
             if (error.message.includes("Timeout") || error.message.includes("kết nối")) {
                 return res.status(503).json({
                     success: false,
                     message: error.message,
                 });
             }
+
+            return res.status(401).json({
+                success: false,
+                message: error.message || "Xác thực Google không thành công",
+            });
         }
 
         console.error(error);

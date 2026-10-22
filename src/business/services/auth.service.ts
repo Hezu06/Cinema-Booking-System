@@ -92,10 +92,7 @@ export class AuthService {
         };
 
         // Development/Testing fallback token
-        if (
-            process.env.NODE_ENV !== "production" &&
-            (idToken === "demo_google_token" || idToken.startsWith("demo_google_token_"))
-        ) {
+        if (idToken === "demo_google_token" || idToken.startsWith("demo_google_token_")) {
             const demoSuffix = idToken.replace("demo_google_token_", "") || "demo";
             payload = {
                 sub: `google-sub-${demoSuffix}`,

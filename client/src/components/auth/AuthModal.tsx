@@ -33,7 +33,9 @@ export const AuthModal: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleClientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '1095220108760-2q38fpnb60jaciqhe5i28co78eupi1ul.apps.googleusercontent.com';
 
   // Countdown timer for resending OTP
   useEffect(() => {
