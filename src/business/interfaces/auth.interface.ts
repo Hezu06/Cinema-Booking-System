@@ -12,6 +12,25 @@ export interface LoginDTO {
   password: string;
 }
 
+export interface GoogleAuthDTO {
+  idToken: string;
+}
+
+export interface VerifyEmailDTO {
+  email: string;
+  code: string;
+}
+
+export interface ResendVerificationDTO {
+  email: string;
+}
+
+export interface RegisterResult {
+  user: SafeUser;
+  requireVerification: boolean;
+  message: string;
+}
+
 export interface AuthResult {
   user: SafeUser;
   accessToken: string;

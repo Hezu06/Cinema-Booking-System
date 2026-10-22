@@ -159,6 +159,65 @@ export const authPaths = {
     },
   },
 
+  "/api/auth/google": {
+    post: {
+      tags: ["Auth"],
+      summary: "Dang nhap hoac dang ky bang Google OAuth 2.0 (Google ID Token)",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/GoogleAuthInput",
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Dang nhap Google thanh cong",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/LoginResponse",
+              },
+            },
+          },
+        },
+        400: {
+          description: "Du lieu xac thuc khong hop le",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+        401: {
+          description: "Google ID token khong hop le hoac da het han",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+        500: {
+          description: "Loi he thong khi xac thuc Google",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
   "/api/auth/me": {
     get: {
       tags: ["Auth"],
@@ -309,6 +368,98 @@ export const authPaths = {
               schema: {
                 $ref:
                   "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "/api/auth/verify-email": {
+    post: {
+      tags: ["Auth"],
+      summary: "Xác thực tài khoản qua mã OTP gửi về email",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/VerifyEmailInput",
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Xác thực email thành công, trả về JWT",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/LoginResponse",
+              },
+            },
+          },
+        },
+        400: {
+          description: "Mã OTP không đúng hoặc đã hết hạn",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+        404: {
+          description: "Tài khoản không tồn tại",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "/api/auth/resend-verification": {
+    post: {
+      tags: ["Auth"],
+      summary: "Gửi lại mã OTP xác thực tài khoản qua email",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/ResendVerificationInput",
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Mã xác thực mới đã được gửi thành công",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  success: { type: "boolean", example: true },
+                  message: { type: "string", example: "Mã xác thực mới đã được gửi tới email của bạn" },
+                },
+              },
+            },
+          },
+        },
+        429: {
+          description: "Yêu cầu gửi lại quá nhanh (cooldown 60 giây)",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/ErrorResponse",
               },
             },
           },

@@ -59,7 +59,7 @@ export interface BookingDetail extends Booking {
     id: string;
     fullName: string;
     email: string;
-    phone: string;
+    phone: string | null;
   };
   showtime: {
     id: string;
