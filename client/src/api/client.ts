@@ -30,6 +30,17 @@ async function request<T = any>(endpoint: string, options: RequestInit = {}): Pr
     headers,
   });
 
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    if (res.status === 404) {
+      throw new Error(`Không tìm thấy endpoint API (${BASE_URL}${endpoint}). Vui lòng kiểm tra lại cấu hình biến môi trường VITE_API_URL trên Vercel.`);
+    }
+    if (res.status >= 500) {
+      throw new Error(`Máy chủ Backend đang khởi động lại hoặc gặp sự cố (HTTP ${res.status}). Vui lòng đợi khoảng 30 giây rồi thử lại.`);
+    }
+    throw new Error(`Máy chủ trả về trang HTML thay vì JSON (HTTP ${res.status}). Vui lòng kiểm tra biến môi trường VITE_API_URL trên Vercel.`);
+  }
+
   const data = await res.json();
   if (!res.ok && !data.message) {
     throw new Error(`Request failed with status ${res.status}`);
