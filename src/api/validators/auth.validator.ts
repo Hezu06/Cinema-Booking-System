@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 export const registerSchema = z.object({
     fullName: z.string().trim().min(2, "Họ tên phải có ít nhất 2 ký tự"),
@@ -18,3 +18,25 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const googleAuthSchema = z.object({
+    idToken: z.string().trim().min(1, "Google ID token là bắt buộc"),
+});
+
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+
+export const verifyEmailSchema = z.object({
+    email: z.string().trim().toLowerCase().email("Email không hợp lệ"),
+    code: z
+        .string()
+        .trim()
+        .regex(/^\d{6}$/, "Mã xác thực phải gồm đúng 6 chữ số"),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const resendVerificationSchema = z.object({
+    email: z.string().trim().toLowerCase().email("Email không hợp lệ"),
+});
+
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
