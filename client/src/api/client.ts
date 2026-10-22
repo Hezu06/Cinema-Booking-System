@@ -49,6 +49,21 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  verifyEmail: (payload: { email: string; code: string }) =>
+    request<{ accessToken: string; user: any }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  resendVerification: (payload: { email: string }) =>
+    request<{ success: boolean; message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  googleLogin: (idToken: string) =>
+    request<{ accessToken: string; user: any }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
   getMe: () => request('/auth/me'),
 
   // Movies

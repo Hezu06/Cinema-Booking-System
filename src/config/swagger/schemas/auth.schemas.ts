@@ -74,6 +74,48 @@ export const authSchemas = {
     },
   },
 
+  GoogleAuthInput: {
+    type: "object",
+    required: ["idToken"],
+    properties: {
+      idToken: {
+        type: "string",
+        description: "Google ID Token (JWT) hoặc Access Token từ Google Identity Services",
+        example: "eyJhbGciOiJSUzI1NiIsImtpZCI6...",
+      },
+    },
+  },
+
+  VerifyEmailInput: {
+    type: "object",
+    required: ["email", "code"],
+    properties: {
+      email: {
+        type: "string",
+        format: "email",
+        example: "nguyenvana@example.com",
+      },
+      code: {
+        type: "string",
+        pattern: "^[0-9]{6}$",
+        description: "Mã OTP 6 chữ số gửi qua email",
+        example: "123456",
+      },
+    },
+  },
+
+  ResendVerificationInput: {
+    type: "object",
+    required: ["email"],
+    properties: {
+      email: {
+        type: "string",
+        format: "email",
+        example: "nguyenvana@example.com",
+      },
+    },
+  },
+
   SafeUser: {
     type: "object",
     required: [
