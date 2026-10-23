@@ -7,9 +7,14 @@ export class NodeMailerGateway implements EmailService {
     private readonly isConfigured: boolean = false;
 
     constructor() {
-        const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASS;
-        const host = process.env.SMTP_HOST || "smtp.gmail.com";
+        const user = process.env.SMTP_USER?.trim();
+        // Remove spaces commonly copied from Google App Password displays (e.g. "abcd efgh ijkl mnop")
+        const pass = process.env.SMTP_PASS?.replace(/\s+/g, "").trim();
+        let host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+        // Auto-fix if user typed "smtp.com", "gmail.com", or "smtp.google.com" instead of "smtp.gmail.com"
+        if ((host === "smtp.com" || host === "gmail.com" || host === "smtp.google.com") && (user?.includes("gmail") || user?.endsWith("@gmail.com"))) {
+            host = "smtp.gmail.com";
+        }
         const port = Number(process.env.SMTP_PORT) || 587;
         const secure = process.env.SMTP_SECURE === "true" || port === 465;
 
@@ -25,7 +30,8 @@ export class NodeMailerGateway implements EmailService {
     }
 
     async sendVerificationEmail(to: string, name: string, otpCode: string): Promise<boolean> {
-        const from = process.env.EMAIL_FROM || '"Sọt Phim Cinema" <no-reply@sotphim.vn>';
+        const user = process.env.SMTP_USER?.trim();
+        const from = process.env.EMAIL_FROM || (user ? `"Sọt Phim Cinema" <${user}>` : '"Sọt Phim Cinema" <no-reply@sotphim.vn>');
         const subject = `[Sọt Phim] Mã xác thực tài khoản của bạn: ${otpCode}`;
 
         if (!this.isConfigured || !this.transporter) {
@@ -78,9 +84,11 @@ export class NodeMailerGateway implements EmailService {
                 text: `Xin chào ${name},\nMã xác thực tài khoản Sọt Phim của bạn là: ${otpCode} (hiệu lực 15 phút).\nVui lòng không chia sẻ mã này cho bất kỳ ai.`,
                 html,
             });
+            console.log(`✅ Verification email successfully sent via SMTP to: ${to}`);
             return true;
         } catch (error) {
-            console.error("❌ Failed to send verification email via SMTP:", error);
+            console.error("❌ Failed to send verification email via SMTP:", error instanceof Error ? error.message : error);
+            console.log(`🔑 [FALLBACK LOG] Mã OTP cho ${to}: ${otpCode}`);
             return false;
         }
     }
