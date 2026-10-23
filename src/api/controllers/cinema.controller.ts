@@ -1,356 +1,103 @@
-import type {
-  Request,
-  Response,
-} from "express";
-
-import {
-  CinemaService,
-} from "../../business/services/cinema.service.js";
-
+import type { Request, Response } from "express";
+import { CinemaService } from "../../business/services/cinema.service.js";
 import {
   createCinemaSchema,
   updateCinemaSchema,
   cinemaIdParamSchema,
 } from "../validators/cinema.validator.js";
+import { asyncHandler } from "../utils/async-handler.util.js";
+import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
 
 export class CinemaController {
-  constructor(
-    private readonly cinemaService:
-      CinemaService
-  ) {}
+  constructor(private readonly cinemaService: CinemaService) {}
 
-  getAllCinemas = async (
-    _request: Request,
-    response: Response
-  ) => {
-    try {
-      const cinemas =
-        await this.cinemaService
-          .getAllCinemas();
+  getAllCinemas = asyncHandler(async (_request: Request, response: Response) => {
+    const cinemas = await this.cinemaService.getAllCinemas();
 
-      return response
-        .status(200)
-        .json({
-          success: true,
-          message:
-            "Get all cinemas",
-          data: cinemas,
-        });
-    } catch (error) {
-      console.error(
-        "Error fetching all cinemas:",
-        error
-      );
+    return response.status(200).json({
+      success: true,
+      message: "Get all cinemas",
+      data: cinemas,
+    });
+  });
 
-      return response
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Internal server error",
-        });
+  getCinemaById = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const paramResult = cinemaIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
     }
-  };
 
-  getCinemaById = async (
-    request: Request<{
-      id: string;
-    }>,
-    response: Response
-  ) => {
-    try {
-      const paramResult =
-        cinemaIdParamSchema.safeParse(
-          request.params
-        );
+    const { id } = paramResult.data;
+    const cinema = await this.cinemaService.getCinemaById(id);
 
-      if (!paramResult.success) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid cinema ID",
-            errors:
-              paramResult.error.issues,
-          });
-      }
-
-      const { id } =
-        paramResult.data;
-
-      const cinema =
-        await this.cinemaService
-          .getCinemaById(id);
-
-      if (!cinema) {
-        return response
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Cinema not found",
-          });
-      }
-
-      return response
-        .status(200)
-        .json({
-          success: true,
-          message:
-            `Get cinema ${id}`,
-          data: cinema,
-        });
-    } catch (error) {
-      console.error(
-        "Error fetching cinema by ID:",
-        error
-      );
-
-      return response
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Internal server error",
-        });
+    if (!cinema) {
+      throw new NotFoundError("Cinema not found");
     }
-  };
 
-  createCinema = async (
-    request: Request,
-    response: Response
-  ) => {
-    try {
-      const bodyResult =
-        createCinemaSchema.safeParse(
-          request.body
-        );
+    return response.status(200).json({
+      success: true,
+      message: "Get cinema by ID",
+      data: cinema,
+    });
+  });
 
-      if (!bodyResult.success) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Validation failed",
-            errors:
-              bodyResult.error.issues,
-          });
-      }
-
-      const cinema =
-        await this.cinemaService
-          .createCinema(
-            bodyResult.data
-          );
-
-      return response
-        .status(201)
-        .json({
-          success: true,
-          message:
-            "Cinema created",
-          data: cinema,
-        });
-    } catch (error) {
-      console.error(
-        "Error creating cinema:",
-        error
-      );
-
-      return response
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Internal server error",
-        });
+  createCinema = asyncHandler(async (request: Request, response: Response) => {
+    const bodyResult = createCinemaSchema.safeParse(request.body);
+    if (!bodyResult.success) {
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
-  };
 
-  updateCinema = async (
-    request: Request<{
-      id: string;
-    }>,
-    response: Response
-  ) => {
-    try {
-      const paramResult =
-        cinemaIdParamSchema.safeParse(
-          request.params
-        );
+    const cinema = await this.cinemaService.createCinema(bodyResult.data);
 
-      if (!paramResult.success) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid cinema ID",
-            errors:
-              paramResult.error.issues,
-          });
-      }
+    return response.status(201).json({
+      success: true,
+      message: "Cinema created",
+      data: cinema,
+    });
+  });
 
-      const bodyResult =
-        updateCinemaSchema.safeParse(
-          request.body
-        );
-
-      if (!bodyResult.success) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Validation failed",
-            errors:
-              bodyResult.error.issues,
-          });
-      }
-
-      const { id } =
-        paramResult.data;
-
-      const cinema =
-        await this.cinemaService
-          .updateCinema(
-            id,
-            bodyResult.data
-          );
-
-      if (!cinema) {
-        return response
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Cinema not found",
-          });
-      }
-
-      return response
-        .status(200)
-        .json({
-          success: true,
-          message:
-            "Cinema updated",
-          data: cinema,
-        });
-    } catch (error) {
-      console.error(
-        "Error updating cinema:",
-        error
-      );
-
-      return response
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Internal server error",
-        });
+  updateCinema = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const paramResult = cinemaIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
     }
-  };
 
-  deleteCinema = async (
-    request: Request<{
-      id: string;
-    }>,
-    response: Response
-  ) => {
-    try {
-      const paramResult =
-        cinemaIdParamSchema.safeParse(
-          request.params
-        );
-
-      if (!paramResult.success) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "Invalid cinema ID",
-            errors:
-              paramResult.error.issues,
-          });
-      }
-
-      const { id } =
-        paramResult.data;
-
-      const deletedCinema =
-        await this.cinemaService
-          .deleteCinema(id);
-
-      if (!deletedCinema) {
-        return response
-          .status(404)
-          .json({
-            success: false,
-            message:
-              "Cinema not found",
-          });
-      }
-
-      return response
-        .status(200)
-        .json({
-          success: true,
-          message:
-            "Cinema deleted successfully",
-          data: deletedCinema,
-        });
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes(
-          "still contains rooms"
-        )
-      ) {
-        return response
-          .status(409)
-          .json({
-            success: false,
-            message: error.message,
-          });
-      }
-
-      /*
-       * Extra database protection.
-       *
-       * P2003 = foreign key
-       * constraint violation.
-       */
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "P2003"
-      ) {
-        return response
-          .status(409)
-          .json({
-            success: false,
-            message:
-              "Cinema cannot be deleted because it is referenced by related data",
-          });
-      }
-
-      console.error(
-        "Error deleting cinema:",
-        error
-      );
-
-      return response
-        .status(500)
-        .json({
-          success: false,
-          message:
-            "Internal server error",
-        });
+    const bodyResult = updateCinemaSchema.safeParse(request.body);
+    if (!bodyResult.success) {
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
-  };
+
+    const { id } = paramResult.data;
+    const cinema = await this.cinemaService.updateCinema(id, bodyResult.data);
+
+    if (!cinema) {
+      throw new NotFoundError("Cinema not found");
+    }
+
+    return response.status(200).json({
+      success: true,
+      message: "Cinema updated",
+      data: cinema,
+    });
+  });
+
+  deleteCinema = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const paramResult = cinemaIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
+    }
+
+    const { id } = paramResult.data;
+    const cinema = await this.cinemaService.deleteCinema(id);
+
+    if (!cinema) {
+      throw new NotFoundError("Cinema not found");
+    }
+
+    return response.status(200).json({
+      success: true,
+      message: "Cinema deleted",
+      data: cinema,
+    });
+  });
 }

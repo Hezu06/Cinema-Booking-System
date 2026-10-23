@@ -14,6 +14,8 @@ import paymentRouter from "./api/routes/payment.routes.js";
 import {
   setupSwagger,
 } from "./config/swagger/index.js";
+import { notFoundHandler } from "./api/middlewares/not-found.middleware.js";
+import { errorHandler } from "./api/middlewares/error.middleware.js";
 
 const app = express();
 
@@ -44,5 +46,11 @@ app.use("/api/seats", seatRouter);
 app.use("/api/showtimes", showtimeRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/payments", paymentRouter);
+
+// Fallback: 404 for unmatched routes
+app.use(notFoundHandler);
+
+// Centralized Global Error Handler
+app.use(errorHandler);
 
 export default app;

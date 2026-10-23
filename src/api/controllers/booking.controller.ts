@@ -9,417 +9,162 @@ import {
   holdSeatsSchema,
   releaseSeatsSchema,
 } from "../validators/booking.validator.js";
-
-function handleBookingError(error: unknown, response: Response): boolean {
-  if (!(error instanceof Error)) return false;
-
-  switch (error.message) {
-    case "SHOWTIME_NOT_FOUND":
-      response.status(404).json({
-        success: false,
-        message: "Suất chiếu không tồn tại trong hệ thống",
-      });
-      return true;
-
-    case "SHOWTIME_NOT_AVAILABLE":
-      response.status(409).json({
-        success: false,
-        message: "Suất chiếu này hiện không mở để đặt vé",
-      });
-      return true;
-
-    case "SHOWTIME_ALREADY_STARTED":
-      response.status(409).json({
-        success: false,
-        message: "Suất chiếu đã bắt đầu hoặc đã qua, không thể thao tác",
-      });
-      return true;
-
-    case "SOME_SEATS_NOT_FOUND":
-      response.status(404).json({
-        success: false,
-        message: "Một hoặc nhiều ghế được chọn không tồn tại trong suất chiếu này",
-      });
-      return true;
-
-    case "SEATS_ALREADY_BOOKED":
-      response.status(409).json({
-        success: false,
-        message: "Một hoặc nhiều ghế đã được khách hàng khác đặt trước đó",
-      });
-      return true;
-
-    case "SEATS_HELD_BY_ANOTHER_USER":
-      response.status(409).json({
-        success: false,
-        message: "Một hoặc nhiều ghế đang được khách hàng khác tạm giữ",
-      });
-      return true;
-
-    case "HOLD_EXPIRED":
-      response.status(409).json({
-        success: false,
-        message: "Thời gian giữ ghế đã hết hạn, vui lòng chọn lại ghế",
-      });
-      return true;
-
-    case "HOLD_REQUIRED":
-      response.status(409).json({ success: false, message: "Vui lòng giữ ghế trước khi tạo booking" });
-      return true;
-
-    case "NO_SEATS_SPECIFIED":
-      response.status(400).json({
-        success: false,
-        message: "Vui lòng chọn ít nhất 1 ghế",
-      });
-      return true;
-
-    case "DUPLICATE_SEATS_IN_REQUEST":
-      response.status(400).json({
-        success: false,
-        message: "Danh sách ghế đặt không được chứa ghế trùng nhau",
-      });
-      return true;
-
-    case "MAX_SEATS_EXCEEDED":
-      response.status(400).json({
-        success: false,
-        message: "Mỗi lần đặt chỉ được chọn tối đa 8 ghế",
-      });
-      return true;
-
-    case "BOOKING_ALREADY_CANCELLED":
-      response.status(409).json({
-        success: false,
-        message: "Đơn đặt vé này đã bị hủy trước đó",
-      });
-      return true;
-
-    case "BOOKING_EXPIRED":
-      response.status(409).json({ success: false, message: "Booking đã hết hạn thanh toán" });
-      return true;
-
-    case "CANCELLATION_WINDOW_CLOSED":
-      response.status(409).json({ success: false, message: "Chỉ có thể hủy vé trước giờ chiếu ít nhất 2 giờ" });
-      return true;
-
-    case "TICKET_ALREADY_USED":
-      response.status(409).json({ success: false, message: "Không thể hủy vì vé đã được sử dụng" });
-      return true;
-
-    case "PAYMENT_ALREADY_REFUNDED":
-      response.status(409).json({ success: false, message: "Booking này đã được hoàn tiền" });
-      return true;
-
-    case "BOOKING_NOT_FOUND":
-      response.status(404).json({
-        success: false,
-        message: "Đơn đặt vé không tồn tại trong hệ thống",
-      });
-      return true;
-
-    case "BOOKING_NOT_CONFIRMED":
-      response.status(400).json({
-        success: false,
-        message: "Đơn đặt vé chưa hoàn tất thanh toán hoặc đã bị hủy",
-      });
-      return true;
-
-    case "NO_USER_EMAIL":
-      response.status(400).json({
-        success: false,
-        message: "Tài khoản không có địa chỉ email hợp lệ để nhận vé",
-      });
-      return true;
-
-    case "EMAIL_SERVICE_NOT_AVAILABLE":
-      response.status(503).json({
-        success: false,
-        message: "Dịch vụ gửi email hiện không khả dụng",
-      });
-      return true;
-      response.status(409).json({ success: false, message: "Booking này đã được hoàn tiền" });
-      return true;
-
-    case "FORBIDDEN":
-      response.status(403).json({
-        success: false,
-        message: "Bạn không có quyền xem hoặc thao tác trên đơn đặt vé này",
-      });
-      return true;
-
-    default:
-      return false;
-  }
-}
+import { asyncHandler } from "../utils/async-handler.util.js";
+import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
 
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  holdSeats = async (request: Request, response: Response) => {
+  holdSeats = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
     const bodyResult = holdSeatsSchema.safeParse(request.body);
     if (!bodyResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: bodyResult.error.issues,
-      });
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
 
-    try {
-      const result = await this.bookingService.holdSeats(
-        user.userId,
-        bodyResult.data,
-      );
+    const result = await this.bookingService.holdSeats(
+      user.userId,
+      bodyResult.data,
+    );
 
-      return response.status(200).json({
-        success: true,
-        message: "Seats held successfully",
-        data: result,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
+    return response.status(200).json({
+      success: true,
+      message: "Seats held successfully",
+      data: result,
+    });
+  });
 
-      console.error("Error holding seats:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
-
-  releaseSeats = async (request: Request, response: Response) => {
+  releaseSeats = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
     const bodyResult = releaseSeatsSchema.safeParse(request.body);
     if (!bodyResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: bodyResult.error.issues,
-      });
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
 
-    try {
-      const result = await this.bookingService.releaseSeats(
-        user.userId,
-        bodyResult.data,
-      );
+    const result = await this.bookingService.releaseSeats(
+      user.userId,
+      bodyResult.data,
+    );
 
-      return response.status(200).json({
-        success: true,
-        message: "Seats released successfully",
-        data: result,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
+    return response.status(200).json({
+      success: true,
+      message: "Seats released successfully",
+      data: result,
+    });
+  });
 
-      console.error("Error releasing seats:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
-
-  createBooking = async (request: Request, response: Response) => {
+  createBooking = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
     const bodyResult = createBookingSchema.safeParse(request.body);
     if (!bodyResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: bodyResult.error.issues,
-      });
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
 
-    try {
-      const booking = await this.bookingService.createBooking(
-        user.userId,
-        bodyResult.data,
-      );
+    const booking = await this.bookingService.createBooking(
+      user.userId,
+      bodyResult.data,
+    );
 
-      return response.status(201).json({
-        success: true,
-        message: "Booking created and awaiting payment",
-        data: booking,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
+    return response.status(201).json({
+      success: true,
+      message: "Booking created and awaiting payment",
+      data: booking,
+    });
+  });
 
-      console.error("Error creating booking:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
-
-  getMyBookings = async (request: Request, response: Response) => {
+  getMyBookings = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
-    try {
-      const bookings = await this.bookingService.getMyBookings(
-        user.userId,
-      );
+    const bookings = await this.bookingService.getMyBookings(user.userId);
 
-      return response.status(200).json({
-        success: true,
-        message: "Get my bookings successfully",
-        data: bookings,
-      });
-    } catch (error) {
-      console.error("Error fetching my bookings:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
+    return response.status(200).json({
+      success: true,
+      message: "Get my bookings successfully",
+      data: bookings,
+    });
+  });
 
-  getBookingById = async (request: Request, response: Response) => {
+  getBookingById = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
     const paramResult = bookingIdParamSchema.safeParse(request.params);
     if (!paramResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid booking ID",
-        errors: paramResult.error.issues,
-      });
+      throw new ValidationError("Invalid booking ID", paramResult.error.issues);
     }
 
-    try {
-      const booking = await this.bookingService.getBookingById(
-        paramResult.data.id,
-        user,
-      );
+    const booking = await this.bookingService.getBookingById(
+      paramResult.data.id,
+      user,
+    );
 
-      if (!booking) {
-        return response.status(404).json({
-          success: false,
-          message: "Booking not found",
-        });
-      }
-
-      return response.status(200).json({
-        success: true,
-        message: "Get booking detail successfully",
-        data: booking,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
-
-      console.error("Error fetching booking by ID:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+    if (!booking) {
+      throw new NotFoundError("Booking not found");
     }
-  };
 
-  cancelBooking = async (request: Request, response: Response) => {
+    return response.status(200).json({
+      success: true,
+      message: "Get booking detail successfully",
+      data: booking,
+    });
+  });
+
+  cancelBooking = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
     const paramResult = bookingIdParamSchema.safeParse(request.params);
     if (!paramResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid booking ID",
-        errors: paramResult.error.issues,
-      });
+      throw new ValidationError("Invalid booking ID", paramResult.error.issues);
     }
     const bodyResult = cancelBookingSchema.safeParse(request.body ?? {});
     if (!bodyResult.success) {
-      return response.status(400).json({ success: false, message: "Validation failed", errors: bodyResult.error.issues });
+      throw new ValidationError("Validation failed", bodyResult.error.issues);
     }
 
-    try {
-      const booking = await this.bookingService.cancelBooking(
-        paramResult.data.id,
-        user,
-        bodyResult.data.reason,
-      );
+    const booking = await this.bookingService.cancelBooking(
+      paramResult.data.id,
+      user,
+      bodyResult.data.reason,
+    );
 
-      if (!booking) {
-        return response.status(404).json({
-          success: false,
-          message: "Booking not found",
-        });
-      }
-
-      return response.status(200).json({
-        success: true,
-        message: "Booking cancelled, seats released and refund simulated successfully",
-        data: booking,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
-
-      console.error("Error cancelling booking:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+    if (!booking) {
+      throw new NotFoundError("Booking not found");
     }
-  };
 
-  getAllBookings = async (request: Request, response: Response) => {
+    return response.status(200).json({
+      success: true,
+      message: "Booking cancelled, seats released and refund simulated successfully",
+      data: booking,
+    });
+  });
+
+  getAllBookings = asyncHandler(async (request: Request, response: Response) => {
     const queryResult = bookingQuerySchema.safeParse(request.query);
     if (!queryResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Invalid query parameters",
-        errors: queryResult.error.issues,
-      });
+      throw new ValidationError("Invalid query parameters", queryResult.error.issues);
     }
 
-    try {
-      const bookings = await this.bookingService.getAllBookings(
-        queryResult.data,
-      );
+    const bookings = await this.bookingService.getAllBookings(queryResult.data);
 
-      return response.status(200).json({
-        success: true,
-        message: "Get all bookings successfully",
-        data: bookings,
-      });
-    } catch (error) {
-      console.error("Error fetching all bookings:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
+    return response.status(200).json({
+      success: true,
+      message: "Get all bookings successfully",
+      data: bookings,
+    });
+  });
 
-  resendBookingEmail = async (request: Request, response: Response) => {
+  resendBookingEmail = asyncHandler(async (request: Request, response: Response) => {
     const paramResult = bookingIdParamSchema.safeParse(request.params);
     if (!paramResult.success) {
-      return response.status(400).json({
-        success: false,
-        message: "Mã đơn đặt vé không hợp lệ",
-        errors: paramResult.error.issues,
-      });
+      throw new ValidationError("Mã đơn đặt vé không hợp lệ", paramResult.error.issues);
     }
 
     const user = (request as AuthenticatedRequest).user;
 
-    try {
-      const result = await this.bookingService.resendBookingTicketEmail(
-        paramResult.data.id,
-        user,
-      );
+    const result = await this.bookingService.resendBookingTicketEmail(
+      paramResult.data.id,
+      user,
+    );
 
-      return response.status(200).json({
-        success: result.success,
-        message: result.message,
-      });
-    } catch (error) {
-      if (handleBookingError(error, response)) return;
-
-      console.error("Error resending booking email:", error);
-      return response.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
+    return response.status(200).json({
+      success: result.success,
+      message: result.message,
+    });
+  });
 }

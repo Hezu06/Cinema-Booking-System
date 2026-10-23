@@ -13,6 +13,14 @@ import type {
 } from "../interfaces/auth.interface.js";
 import type { EmailService } from "../interfaces/email.interface.js";
 import { AuthProvider, UserRole, type SafeUser, type User } from "../models/user.model.js";
+import {
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ServiceUnavailableError,
+    UnauthorizedError,
+} from "../../shared/errors/index.js";
 
 export class AuthService {
     constructor(
@@ -26,7 +34,7 @@ export class AuthService {
 
         if (existingUser) {
             if (existingUser.isVerified) {
-                throw new Error("Email đã được sử dụng");
+                throw new ConflictError("Email đã được sử dụng");
             }
 
             // Tài khoản chưa xác thực: cho phép cập nhật lại thông tin, tạo mã OTP mới và gửi lại email
@@ -84,7 +92,7 @@ export class AuthService {
         const user = await this.userRepository.findByEmail(email);
 
         if (!user || !user.passwordHash) {
-            throw new Error("Email hoặc mật khẩu không đúng");
+            throw new UnauthorizedError("Email hoặc mật khẩu không đúng");
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -93,7 +101,7 @@ export class AuthService {
         );
 
         if (!isPasswordValid) {
-            throw new Error("Email hoặc mật khẩu không đúng");
+            throw new UnauthorizedError("Email hoặc mật khẩu không đúng");
         }
 
         if (user.provider === AuthProvider.LOCAL && !user.isVerified) {
@@ -101,7 +109,10 @@ export class AuthService {
                 await this.userRepository.update(user.id, { isVerified: true });
                 user.isVerified = true;
             } else {
-                throw new Error("Tài khoản chưa được kích hoạt. Vui lòng xác thực email của bạn");
+                throw new ForbiddenError("Tài khoản chưa được kích hoạt. Vui lòng xác thực email của bạn", {
+                    isUnverified: true,
+                    email: user.email,
+                });
             }
         }
 
@@ -110,7 +121,7 @@ export class AuthService {
 
     async loginWithGoogle(idToken: string): Promise<AuthResult> {
         if (!this.googleOAuthVerifier) {
-            throw new Error("Dịch vụ xác thực Google chưa được cấu hình");
+            throw new ServiceUnavailableError("Dịch vụ xác thực Google chưa được cấu hình");
         }
 
         const payload = await this.googleOAuthVerifier.verifyIdToken(idToken);
@@ -147,7 +158,7 @@ export class AuthService {
         }
 
         if (!user) {
-            throw new Error("Không thể khởi tạo hoặc tìm kiếm tài khoản người dùng");
+            throw new NotFoundError("Không thể khởi tạo hoặc tìm kiếm tài khoản người dùng");
         }
 
         return this.generateAuthResult(user);
@@ -163,19 +174,19 @@ export class AuthService {
 
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
-            throw new Error("Tài khoản không tồn tại");
+            throw new NotFoundError("Tài khoản không tồn tại");
         }
 
         if (user.isVerified) {
-            throw new Error("Tài khoản đã được xác thực trước đó");
+            throw new ConflictError("Tài khoản đã được xác thực trước đó");
         }
 
         if (!user.verificationToken || user.verificationToken !== code) {
-            throw new Error("Mã xác thực không chính xác");
+            throw new BadRequestError("Mã xác thực không chính xác");
         }
 
         if (!user.verificationExpiresAt || user.verificationExpiresAt.getTime() < Date.now()) {
-            throw new Error("Mã xác thực đã hết hạn. Vui lòng yêu cầu gửi lại mã mới");
+            throw new BadRequestError("Mã xác thực đã hết hạn. Vui lòng yêu cầu gửi lại mã mới");
         }
 
         await this.userRepository.update(user.id, {
@@ -186,7 +197,7 @@ export class AuthService {
 
         const updatedUser = await this.userRepository.findByEmail(email);
         if (!updatedUser) {
-            throw new Error("Không thể tìm kiếm tài khoản sau khi xác thực");
+            throw new NotFoundError("Không thể tìm kiếm tài khoản sau khi xác thực");
         }
 
         return this.generateAuthResult(updatedUser);
@@ -197,11 +208,11 @@ export class AuthService {
         const user = await this.userRepository.findByEmail(normalizedEmail);
 
         if (!user) {
-            throw new Error("Tài khoản không tồn tại");
+            throw new NotFoundError("Tài khoản không tồn tại");
         }
 
         if (user.isVerified) {
-            throw new Error("Tài khoản đã được xác thực trước đó");
+            throw new ConflictError("Tài khoản đã được xác thực trước đó");
         }
 
         const now = Date.now();
@@ -212,7 +223,7 @@ export class AuthService {
             // If timeLeft > 14m, it was issued less than 60s ago.
             if (timeLeft > 14 * 60 * 1000) {
                 const waitSeconds = Math.ceil((timeLeft - 14 * 60 * 1000) / 1000);
-                throw new Error(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã xác thực mới`);
+                throw new BadRequestError(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã xác thực mới`);
             }
         }
 
@@ -240,11 +251,11 @@ export class AuthService {
         const user = await this.userRepository.findByEmail(normalizedEmail);
 
         if (!user) {
-            throw new Error("Không tìm thấy tài khoản với email này");
+            throw new NotFoundError("Không tìm thấy tài khoản với email này");
         }
 
         if (user.provider === AuthProvider.GOOGLE && !user.passwordHash) {
-            throw new Error("Tài khoản này được đăng ký qua Google. Vui lòng đăng nhập bằng Google.");
+            throw new BadRequestError("Tài khoản này được đăng ký qua Google. Vui lòng đăng nhập bằng Google.");
         }
 
         const now = Date.now();
@@ -255,7 +266,7 @@ export class AuthService {
             // If timeLeft > 14m, it was issued less than 60s ago.
             if (timeLeft > 14 * 60 * 1000) {
                 const waitSeconds = Math.ceil((timeLeft - 14 * 60 * 1000) / 1000);
-                throw new Error(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã mới`);
+                throw new BadRequestError(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã mới`);
             }
         }
 
@@ -284,15 +295,15 @@ export class AuthService {
 
         const user = await this.userRepository.findByEmail(email);
         if (!user) {
-            throw new Error("Không tìm thấy tài khoản với email này");
+            throw new NotFoundError("Không tìm thấy tài khoản với email này");
         }
 
         if (!user.resetPasswordToken || user.resetPasswordToken !== code) {
-            throw new Error("Mã xác thực không chính xác");
+            throw new BadRequestError("Mã xác thực không chính xác");
         }
 
         if (!user.resetPasswordExpiresAt || user.resetPasswordExpiresAt.getTime() < Date.now()) {
-            throw new Error("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã đặt lại mật khẩu mới");
+            throw new BadRequestError("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã đặt lại mật khẩu mới");
         }
 
         const passwordHash = await bcrypt.hash(input.newPassword, 12);
@@ -310,20 +321,20 @@ export class AuthService {
     async changePassword(input: ChangePasswordDTO): Promise<boolean> {
         const user = await this.userRepository.findWithPasswordById(input.userId);
         if (!user) {
-            throw new Error("Người dùng không tồn tại");
+            throw new NotFoundError("Người dùng không tồn tại");
         }
 
         if (!user.passwordHash) {
-            throw new Error("Tài khoản của bạn đăng nhập qua Google OAuth, không sử dụng mật khẩu.");
+            throw new BadRequestError("Tài khoản của bạn đăng nhập qua Google OAuth, không sử dụng mật khẩu.");
         }
 
         const isMatch = await bcrypt.compare(input.currentPassword, user.passwordHash);
         if (!isMatch) {
-            throw new Error("Mật khẩu hiện tại không chính xác");
+            throw new BadRequestError("Mật khẩu hiện tại không chính xác");
         }
 
         if (input.currentPassword === input.newPassword) {
-            throw new Error("Mật khẩu mới không được trùng với mật khẩu hiện tại");
+            throw new BadRequestError("Mật khẩu mới không được trùng với mật khẩu hiện tại");
         }
 
         const newHash = await bcrypt.hash(input.newPassword, 12);
@@ -338,7 +349,7 @@ export class AuthService {
         const secret = process.env.JWT_SECRET;
 
         if (!secret) {
-            throw new Error("JWT_SECRET chưa được cấu hình");
+            throw new ServiceUnavailableError("JWT_SECRET chưa được cấu hình");
         }
 
         const expiresIn = (

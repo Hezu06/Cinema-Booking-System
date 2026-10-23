@@ -6,6 +6,16 @@ import type {
   UpdateSeatData,
 } from "../../business/interfaces/seat.interface.js";
 import type { Seat } from "../../business/models/seat.model.js";
+import { ConflictError, NotFoundError } from "../../shared/errors/index.js";
+
+function isPrismaErrorWithCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as Record<string, unknown>).code === code
+  );
+}
 
 export class PrismaSeatRepository implements SeatRepository {
   async findAll(filters: SeatFilters = {}): Promise<Seat[]> {
@@ -33,34 +43,44 @@ export class PrismaSeatRepository implements SeatRepository {
   }
 
   async create(data: CreateSeatData): Promise<Seat> {
-    return prisma.$transaction(async (transaction) => {
-      const seat = await transaction.seat.create({
-        data: {
-          roomId: data.roomId,
-          rowLabel: data.rowLabel,
-          seatNumber: data.seatNumber,
-          type: data.type,
-          ...(data.active !== undefined ? { active: data.active } : {}),
-        },
-      });
-
-      const scheduledShowtimes = await transaction.showtime.findMany({
-        where: { roomId: data.roomId, status: "SCHEDULED" },
-        select: { id: true, basePrice: true },
-      });
-
-      if (seat.active && scheduledShowtimes.length > 0) {
-        await transaction.showtimeSeat.createMany({
-          data: scheduledShowtimes.map((showtime) => ({
-            showtimeId: showtime.id,
-            seatId: seat.id,
-            price: showtime.basePrice,
-          })),
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        const seat = await transaction.seat.create({
+          data: {
+            roomId: data.roomId,
+            rowLabel: data.rowLabel,
+            seatNumber: data.seatNumber,
+            type: data.type,
+            ...(data.active !== undefined ? { active: data.active } : {}),
+          },
         });
-      }
 
-      return seat;
-    });
+        const scheduledShowtimes = await transaction.showtime.findMany({
+          where: { roomId: data.roomId, status: "SCHEDULED" },
+          select: { id: true, basePrice: true },
+        });
+
+        if (seat.active && scheduledShowtimes.length > 0) {
+          await transaction.showtimeSeat.createMany({
+            data: scheduledShowtimes.map((showtime) => ({
+              showtimeId: showtime.id,
+              seatId: seat.id,
+              price: showtime.basePrice,
+            })),
+          });
+        }
+
+        return seat;
+      });
+    } catch (error) {
+      if (isPrismaErrorWithCode(error, "P2002")) {
+        throw new ConflictError("Seat position already exists in this room");
+      }
+      if (isPrismaErrorWithCode(error, "P2003")) {
+        throw new NotFoundError("Room not found");
+      }
+      throw error;
+    }
   }
 
   async update(id: string, data: UpdateSeatData): Promise<Seat | null> {
@@ -79,8 +99,14 @@ export class PrismaSeatRepository implements SeatRepository {
         },
       });
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") {
+      if (isPrismaErrorWithCode(error, "P2025")) {
         return null;
+      }
+      if (isPrismaErrorWithCode(error, "P2002")) {
+        throw new ConflictError("Seat position already exists in this room");
+      }
+      if (isPrismaErrorWithCode(error, "P2003")) {
+        throw new ConflictError("Seat is referenced by one or more showtimes");
       }
       throw error;
     }
@@ -93,8 +119,11 @@ export class PrismaSeatRepository implements SeatRepository {
     try {
       return await prisma.seat.delete({ where: { id } });
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") {
+      if (isPrismaErrorWithCode(error, "P2025")) {
         return null;
+      }
+      if (isPrismaErrorWithCode(error, "P2003")) {
+        throw new ConflictError("Seat is referenced by one or more showtimes");
       }
       throw error;
     }

@@ -6,6 +6,11 @@ import type {
   ShowtimeRepository,
   UpdateShowtimeData,
 } from "../interfaces/showtime.interface.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from "../../shared/errors/index.js";
 
 export class ShowtimeService {
   constructor(
@@ -31,8 +36,14 @@ export class ShowtimeService {
   async createShowtime(data: CreateShowtimeData) {
     await this.validateReferences(data.movieId, data.roomId);
     this.validateTimeRange(data.startTime, data.endTime);
-    const overlap = await this.showtimeRepository.findOverlapping(data.roomId, data.startTime, data.endTime);
-    if (overlap) throw new Error("SHOWTIME_OVERLAP");
+    const overlap = await this.showtimeRepository.findOverlapping(
+      data.roomId,
+      data.startTime,
+      data.endTime,
+    );
+    if (overlap) {
+      throw new ConflictError("Showtime overlaps another showtime in this room");
+    }
     return this.showtimeRepository.create(data);
   }
 
@@ -46,8 +57,15 @@ export class ShowtimeService {
 
     await this.validateReferences(movieId, roomId);
     this.validateTimeRange(startTime, endTime);
-    const overlap = await this.showtimeRepository.findOverlapping(roomId, startTime, endTime, id);
-    if (overlap) throw new Error("SHOWTIME_OVERLAP");
+    const overlap = await this.showtimeRepository.findOverlapping(
+      roomId,
+      startTime,
+      endTime,
+      id,
+    );
+    if (overlap) {
+      throw new ConflictError("Showtime overlaps another showtime in this room");
+    }
     return this.showtimeRepository.update(id, data);
   }
 
@@ -60,11 +78,13 @@ export class ShowtimeService {
       this.movieRepository.findById(movieId),
       this.roomRepository.findById(roomId),
     ]);
-    if (!movie) throw new Error("MOVIE_NOT_FOUND");
-    if (!room) throw new Error("ROOM_NOT_FOUND");
+    if (!movie) throw new NotFoundError("Movie not found");
+    if (!room) throw new NotFoundError("Room not found");
   }
 
   private validateTimeRange(startTime: Date, endTime: Date) {
-    if (startTime >= endTime) throw new Error("INVALID_TIME_RANGE");
+    if (startTime >= endTime) {
+      throw new BadRequestError("startTime must be before endTime");
+    }
   }
 }
