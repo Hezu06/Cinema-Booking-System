@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, LogIn, UserPlus, LogOut, Ticket, User, ChevronDown } from 'lucide-react';
+import { Search, LogIn, UserPlus, LogOut, Ticket, User, ChevronDown, Sliders } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { TicketorLogo } from './TicketorLogo';
 
@@ -102,7 +102,17 @@ export const Navbar: React.FC = () => {
 
           {/* User Auth Section */}
           {isAuthenticated && user ? (
-            <div className="relative">
+            <div className="flex items-center gap-2">
+              {user.role === 'ADMIN' && (
+                <Link
+                  to="/admin"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FCFC65]/10 border border-[#FCFC65]/40 text-[#FCFC65] hover:bg-[#FCFC65]/20 font-bold text-xs transition-colors shadow-sm"
+                >
+                  <Sliders size={13} />
+                  <span>Admin</span>
+                </Link>
+              )}
+              <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2.5 py-1 px-2 rounded-full hover:bg-[#181822] transition-colors"
@@ -131,6 +141,16 @@ export const Navbar: React.FC = () => {
                       <div className="text-[11px] text-[#8E8E9E] truncate">{user.email}</div>
                     </div>
 
+                    {user.role === 'ADMIN' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-[#FCFC65] font-bold hover:bg-[#FCFC65]/10 transition-colors"
+                      >
+                        <Sliders size={15} />
+                        <span>Trang Quản Trị</span>
+                      </Link>
+                    )}
                     <Link
                       to="/profile"
                       onClick={() => setUserMenuOpen(false)}
@@ -162,6 +182,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 </>
               )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-3">
