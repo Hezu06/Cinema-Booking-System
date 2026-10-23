@@ -213,4 +213,30 @@ export class MovieController {
       });
     }
   };
+
+  syncMovies = async (request: Request, response: Response) => {
+    try {
+      const autoCreateShowtimes = request.body?.autoCreateShowtimes !== false;
+      const markEndedOlderThanDays = typeof request.body?.markEndedOlderThanDays === "number"
+        ? request.body.markEndedOlderThanDays
+        : 60;
+
+      const result = await this.movieService.syncExternalMovies({
+        autoCreateShowtimes,
+        markEndedOlderThanDays,
+      });
+
+      return response.status(200).json({
+        success: true,
+        message: "Đồng bộ phim từ TMDB/Ngoại vi và tạo lịch chiếu thành công",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Error syncing movies:", error);
+      return response.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  };
 }

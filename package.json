@@ -20,7 +20,9 @@
     "benchmark:circuit-breaker": "tsx scripts/benchmark-circuit-breaker.ts",
     "client:dev": "npm run dev --prefix client",
     "client:build": "npm run build --prefix client",
-    "test:google-circuit-breaker": "tsx scripts/test-google-circuit-breaker.ts"
+    "test:google-circuit-breaker": "tsx scripts/test-google-circuit-breaker.ts",
+    "movie:sync": "tsx scripts/sync-movies.ts",
+    "test:all-circuit-breakers": "tsx scripts/test-all-circuit-breakers.ts"
   },
   "repository": {
     "type": "git",

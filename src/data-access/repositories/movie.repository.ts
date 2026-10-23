@@ -26,6 +26,14 @@ export class PrismaMovieRepository implements MovieRepository {
     })
   }
 
+  async findByTitle(title: string): Promise<Movie | null> {
+    return prisma.movie.findFirst({
+      where: {
+        title: title.trim(),
+      },
+    })
+  }
+
   async findByTitleAndReleaseDate(title: string, releaseDate: Date): Promise<Movie | null> {
     return prisma.movie.findUnique({
       where: {
@@ -33,6 +41,15 @@ export class PrismaMovieRepository implements MovieRepository {
           title: title.trim(),
           releaseDate: releaseDate,
         },
+      },
+    })
+  }
+
+  async findOldMovies(beforeDate: Date): Promise<Movie[]> {
+    return prisma.movie.findMany({
+      where: {
+        releaseDate: { lt: beforeDate },
+        status: { not: 'ENDED' },
       },
     })
   }
