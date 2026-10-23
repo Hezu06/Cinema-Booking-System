@@ -23,6 +23,7 @@ export interface VerifyEmailDTO {
 
 export interface ResendVerificationDTO {
   email: string;
+  force?: boolean;
 }
 
 export interface RegisterResult {

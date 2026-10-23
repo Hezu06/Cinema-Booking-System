@@ -9,7 +9,7 @@ interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   register: (payload: { fullName: string; email: string; phone: string; password: string }) => Promise<{ requireVerification?: boolean }>;
   verifyEmail: (payload: { email: string; code: string }) => Promise<void>;
-  resendVerification: (email: string) => Promise<string>;
+  resendVerification: (email: string, force?: boolean) => Promise<string>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
   openAuthModal: (mode?: 'login' | 'register' | 'verify', pendingEmail?: string) => void;
@@ -89,8 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalOpen(false);
   };
 
-  const resendVerification = async (email: string) => {
-    const res = await api.resendVerification({ email });
+  const resendVerification = async (email: string, force?: boolean) => {
+    const res = await api.resendVerification({ email, force });
     if (!res.success) {
       throw new Error(res.message || 'Không thể gửi lại mã xác thực');
     }

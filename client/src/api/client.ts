@@ -65,7 +65,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  resendVerification: (payload: { email: string }) =>
+  resendVerification: (payload: { email: string; force?: boolean }) =>
     request<{ success: boolean; message: string }>('/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify(payload),
