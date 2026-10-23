@@ -7,10 +7,10 @@ export class NodeMailerGateway implements EmailService {
     private readonly isConfigured: boolean = false;
 
     constructor() {
-        const user = process.env.SMTP_USER?.trim();
+        const user = process.env.SMTP_USER?.replace(/['"]/g, "").trim();
         // Remove spaces commonly copied from Google App Password displays (e.g. "abcd efgh ijkl mnop")
-        const pass = process.env.SMTP_PASS?.replace(/\s+/g, "").trim();
-        let host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+        const pass = process.env.SMTP_PASS?.replace(/\s+/g, "").replace(/['"]/g, "").trim();
+        let host = process.env.SMTP_HOST?.replace(/['"]/g, "").trim() || "smtp.gmail.com";
         // Auto-fix if user typed "smtp.com", "gmail.com", or "smtp.google.com" instead of "smtp.gmail.com"
         if ((host === "smtp.com" || host === "gmail.com" || host === "smtp.google.com") && (user?.includes("gmail") || user?.endsWith("@gmail.com"))) {
             host = "smtp.gmail.com";
@@ -33,7 +33,7 @@ export class NodeMailerGateway implements EmailService {
     }
 
     async sendVerificationEmail(to: string, name: string, otpCode: string): Promise<boolean> {
-        const user = process.env.SMTP_USER?.trim();
+        const user = process.env.SMTP_USER?.replace(/['"]/g, "").trim();
         const from = process.env.EMAIL_FROM || (user ? `"Sọt Phim Cinema" <${user}>` : '"Sọt Phim Cinema" <no-reply@sotphim.vn>');
         const subject = `[Sọt Phim] Mã xác thực tài khoản của bạn: ${otpCode}`;
 
@@ -67,7 +67,7 @@ export class NodeMailerGateway implements EmailService {
         `;
 
         // 1. Check HTTP-based Email APIs first (Render Free blocks SMTP ports 25, 465, 587, but allows HTTPS port 443)
-        const resendApiKey = process.env.RESEND_API_KEY?.trim();
+        const resendApiKey = process.env.RESEND_API_KEY?.replace(/['"]/g, "").trim();
         if (resendApiKey) {
             try {
                 const res = await fetch("https://api.resend.com/emails", {
@@ -94,10 +94,11 @@ export class NodeMailerGateway implements EmailService {
             }
         }
 
-        const brevoApiKey = process.env.BREVO_API_KEY?.trim();
+        const brevoApiKey = process.env.BREVO_API_KEY?.replace(/['"]/g, "").trim();
         if (brevoApiKey) {
             try {
-                const senderEmail = process.env.BREVO_SENDER || user || "hyo.trng@gmail.com";
+                const senderEmail = process.env.BREVO_SENDER?.replace(/['"]/g, "").trim() || user || "hyo.trng@gmail.com";
+                console.log(`ℹ️ [BREVO] Đang gọi API với Key bắt đầu: ${brevoApiKey.slice(0, 10)}... (Độ dài: ${brevoApiKey.length} ký tự), Sender: ${senderEmail}`);
                 const res = await fetch("https://api.brevo.com/v3/smtp/email", {
                     method: "POST",
                     headers: {
