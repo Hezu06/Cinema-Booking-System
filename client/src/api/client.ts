@@ -146,6 +146,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ reason: 'Customer cancelled booking' }),
     }),
+  resendBookingEmail: (id: string) =>
+    request<{ success: boolean; message: string }>(`/bookings/${id}/resend-email`, {
+      method: 'POST',
+    }),
 
   createVnpayPayment: (bookingId: string, bankCode?: string) =>
     request<{ payment: Payment; paymentUrl: string }>('/payments/vnpay/create', {
