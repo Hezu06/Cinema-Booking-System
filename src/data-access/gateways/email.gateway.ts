@@ -1,37 +1,6 @@
-import nodemailer from "nodemailer";
-import type { Transporter } from "nodemailer";
 import type { EmailService } from "../../business/interfaces/email.interface.js";
 
-export class NodeMailerGateway implements EmailService {
-    private transporter: Transporter | null = null;
-    private readonly isConfigured: boolean = false;
-
-    constructor() {
-        const user = process.env.SMTP_USER?.replace(/['"]/g, "").trim();
-        // Remove spaces commonly copied from Google App Password displays (e.g. "abcd efgh ijkl mnop")
-        const pass = process.env.SMTP_PASS?.replace(/\s+/g, "").replace(/['"]/g, "").trim();
-        let host = process.env.SMTP_HOST?.replace(/['"]/g, "").trim() || "smtp.gmail.com";
-        // Auto-fix if user typed "smtp.com", "gmail.com", or "smtp.google.com" instead of "smtp.gmail.com"
-        if ((host === "smtp.com" || host === "gmail.com" || host === "smtp.google.com") && (user?.includes("gmail") || user?.endsWith("@gmail.com"))) {
-            host = "smtp.gmail.com";
-        }
-        const port = Number(process.env.SMTP_PORT) || 587;
-        const secure = process.env.SMTP_SECURE === "true" || port === 465;
-
-        if (user && pass) {
-            this.transporter = nodemailer.createTransport({
-                host,
-                port,
-                secure,
-                auth: { user, pass },
-                connectionTimeout: 5000,
-                greetingTimeout: 5000,
-                socketTimeout: 5000,
-            });
-            this.isConfigured = true;
-        }
-    }
-
+export class BrevoEmailGateway implements EmailService {
     private async sendMailInternal({
         to,
         name,
@@ -46,44 +15,15 @@ export class NodeMailerGateway implements EmailService {
         subject: string;
         html: string;
         text: string;
-        otpCode: string;
+        otpCode?: string;
         typeLabel: string;
     }): Promise<boolean> {
-        const user = process.env.SMTP_USER?.replace(/['"]/g, "").trim();
-        const from = process.env.EMAIL_FROM || (user ? `"Sọt Phim Cinema" <${user}>` : '"Sọt Phim Cinema" <no-reply@sotphim.vn>');
-
-        // 1. Check HTTP-based Email APIs first (Render Free blocks SMTP ports 25, 465, 587, but allows HTTPS port 443)
-        const resendApiKey = process.env.RESEND_API_KEY?.replace(/['"]/g, "").trim();
-        if (resendApiKey) {
-            try {
-                const res = await fetch("https://api.resend.com/emails", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${resendApiKey}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        from: process.env.RESEND_FROM || "Sọt Phim Cinema <onboarding@resend.dev>",
-                        to: [to],
-                        subject,
-                        html,
-                    }),
-                });
-                if (res.ok) {
-                    console.log(`✅ [${typeLabel}] Email successfully sent via Resend API (HTTPS) to: ${to}`);
-                    return true;
-                }
-                const errData = await res.json().catch(() => ({}));
-                console.error(`❌ Resend API error (${typeLabel}):`, errData);
-            } catch (err) {
-                console.error(`❌ Failed to send via Resend API (${typeLabel}):`, err);
-            }
-        }
-
         const brevoApiKey = process.env.BREVO_API_KEY?.replace(/['"]/g, "").trim();
+        const senderEmail = process.env.BREVO_SENDER?.replace(/['"]/g, "").trim() || "hyo.trng@gmail.com";
+
+        // 1. Send via Brevo HTTPS REST API (Cổng 443 HTTPS tương thích hoàn toàn Render Free)
         if (brevoApiKey) {
             try {
-                const senderEmail = process.env.BREVO_SENDER?.replace(/['"]/g, "").trim() || user || "hyo.trng@gmail.com";
                 const res = await fetch("https://api.brevo.com/v3/smtp/email", {
                     method: "POST",
                     headers: {
@@ -96,12 +36,15 @@ export class NodeMailerGateway implements EmailService {
                         to: [{ email: to, name }],
                         subject,
                         htmlContent: html,
+                        textContent: text,
                     }),
                 });
+
                 if (res.ok) {
                     console.log(`✅ [${typeLabel}] Email successfully sent via Brevo API (HTTPS) to: ${to}`);
                     return true;
                 }
+
                 const errData = await res.json().catch(() => ({}));
                 console.error(`❌ Brevo API error (${typeLabel}):`, errData);
             } catch (err) {
@@ -109,32 +52,15 @@ export class NodeMailerGateway implements EmailService {
             }
         }
 
-        // 2. Fallback to NodeMailer SMTP if configured
-        if (this.isConfigured && this.transporter) {
-            try {
-                await this.transporter.sendMail({
-                    from,
-                    to,
-                    subject,
-                    text,
-                    html,
-                });
-                console.log(`✅ [${typeLabel}] Email successfully sent via SMTP to: ${to}`);
-                return true;
-            } catch (error) {
-                console.error(`❌ Failed to send ${typeLabel} email via SMTP:`, error instanceof Error ? error.message : error);
-                console.log(`🔑 [FALLBACK LOG] Mã OTP ${typeLabel} cho ${to}: ${otpCode}`);
-                return false;
-            }
-        }
-
-        // 3. Fallback / Dev Mode
+        // 2. Fallback / Dev / Simulation Mode (Hiển thị trực quan trong console khi chưa có API key)
         console.log("\n=======================================================");
         console.log(`📧 [EMAIL GATEWAY - ${typeLabel.toUpperCase()} - DEV / SIMULATION MODE]`);
         console.log(`To: ${to} (${name})`);
         console.log(`Subject: ${subject}`);
-        console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${otpCode}`);
-        console.log("Thời hạn hiệu lực: 15 phút");
+        if (otpCode) {
+            console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${otpCode}`);
+            console.log("Thời hạn hiệu lực: 15 phút");
+        }
         console.log("=======================================================\n");
         return true;
     }
@@ -226,4 +152,4 @@ export class NodeMailerGateway implements EmailService {
     }
 }
 
-export const emailService = new NodeMailerGateway();
+export const emailService = new BrevoEmailGateway();
