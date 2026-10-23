@@ -11,6 +11,12 @@ import {
   X,
   Download,
   Share2,
+  KeyRound,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api, getAuthToken } from '../api/client';
@@ -30,6 +36,53 @@ export const ProfilePage: React.FC = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [activeTicketModal, setActiveTicketModal] = useState<BookingDetail | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  // Change Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (newPassword.length < 8) {
+      setPasswordError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await api.changePassword({
+        currentPassword,
+        newPassword,
+      });
+      if (res.success) {
+        setPasswordSuccess(res.message || 'Đổi mật khẩu thành công!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+      } else {
+        setPasswordError(res.message || 'Đổi mật khẩu không thành công.');
+      }
+    } catch (err: any) {
+      setPasswordError(err.message || 'Không thể đổi mật khẩu lúc này.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const handleCancelBooking = async (bookingId: string) => {
     const confirmed = window.confirm(
@@ -286,6 +339,22 @@ export const ProfilePage: React.FC = () => {
                       <ChevronRight size={14} />
                     </span>
                   </div>
+
+                  <div
+                    onClick={() => setActiveTab('settings')}
+                    className="p-5 rounded-2xl bg-[#12121A] border border-[#20202E] hover:border-[#303042] cursor-pointer flex items-center justify-between transition"
+                  >
+                    <div>
+                      <div className="font-bold text-white text-sm">Bảo mật & Đổi mật khẩu</div>
+                      <div className="text-xs text-[#8E8E9E] mt-0.5">
+                        Thay đổi mật khẩu đăng nhập và quản lý thông tin bảo mật tài khoản
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#FCFC65] font-semibold flex items-center gap-1">
+                      <span>Cài đặt bảo mật</span>
+                      <ChevronRight size={14} />
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -459,14 +528,14 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
 
-            {/* TAB: MY WALLET & PAYMENTS & SETTINGS */}
-            {(activeTab === 'wallet' || activeTab === 'payments' || activeTab === 'settings') && (
+            {/* TAB: MY WALLET & PAYMENTS */}
+            {(activeTab === 'wallet' || activeTab === 'payments') && (
               <div className="bg-[#12121A] border border-[#20202E] rounded-3xl p-8 text-center space-y-4">
                 <div className="w-14 h-14 rounded-2xl bg-[#181824] border border-[#282838] flex items-center justify-center mx-auto text-[#FCFC65]">
                   <Wallet size={26} />
                 </div>
                 <h3 className="font-bold text-white text-lg capitalize">
-                  {activeTab === 'wallet' ? 'Ví Voucher & Điểm' : activeTab === 'payments' ? 'Phương thức thanh toán đã lưu' : 'Cài đặt tài khoản'}
+                  {activeTab === 'wallet' ? 'Ví Voucher & Điểm' : 'Phương thức thanh toán đã lưu'}
                 </h3>
                 <p className="text-xs text-[#8E8E9E] max-w-md mx-auto">
                   Quản lý tích điểm thưởng thành viên, mã khuyến mại và thông tin tài khoản Sọt phim của bạn.
@@ -478,6 +547,158 @@ export const ProfilePage: React.FC = () => {
                   <span className="inline-block px-4 py-2 rounded-xl bg-[#181824] border border-[#282838] text-xs text-white font-mono">
                     Hạng thành viên: Thân Thiết
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: SETTINGS & CHANGE PASSWORD */}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                {/* Account Details Card */}
+                <div className="bg-[#12121A] border border-[#20202E] rounded-3xl p-6 sm:p-8 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Thông tin tài khoản</h3>
+                      <p className="text-xs text-[#8E8E9E]">Thông tin chi tiết và trạng thái xác thực tài khoản của bạn</p>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/40 border border-emerald-800/40 text-emerald-400 text-xs font-medium">
+                      <ShieldCheck size={14} />
+                      <span>{user?.isVerified ? 'Tài khoản đã xác thực' : 'Chưa xác thực'}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
+                    <div className="p-4 rounded-2xl bg-[#181824] border border-[#282838]">
+                      <span className="text-[#8E8E9E] block mb-1">Họ và tên</span>
+                      <span className="text-white font-semibold text-sm">{user?.fullName || 'Chưa cập nhật'}</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-[#181824] border border-[#282838]">
+                      <span className="text-[#8E8E9E] block mb-1">Địa chỉ Email</span>
+                      <span className="text-white font-semibold text-sm">{user?.email || 'Chưa cập nhật'}</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-[#181824] border border-[#282838]">
+                      <span className="text-[#8E8E9E] block mb-1">Số điện thoại</span>
+                      <span className="text-white font-semibold text-sm">{user?.phone || 'Chưa cập nhật'}</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-[#181824] border border-[#282838]">
+                      <span className="text-[#8E8E9E] block mb-1">Phương thức đăng nhập</span>
+                      <span className="text-[#FCFC65] font-semibold text-sm font-mono">
+                        {user?.provider === 'GOOGLE' ? 'Google OAuth 2.0' : 'Mật khẩu cục bộ (Email/Pass)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Change Password Card */}
+                <div className="bg-[#12121A] border border-[#20202E] rounded-3xl p-6 sm:p-8 space-y-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#181824] border border-[#282838] flex items-center justify-center text-[#FCFC65]">
+                      <KeyRound size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Thay đổi mật khẩu</h3>
+                      <p className="text-xs text-[#8E8E9E]">Cập nhật mật khẩu định kỳ để nâng cao tính an toàn cho tài khoản</p>
+                    </div>
+                  </div>
+
+                  {user?.provider === 'GOOGLE' ? (
+                    <div className="p-4 rounded-2xl bg-[#181824] border border-[#282838] text-xs text-[#8E8E9E]">
+                      💡 Tài khoản của bạn được liên kết và đăng nhập thông qua <strong className="text-white">Google OAuth</strong>. Bạn không cần thiết lập hoặc thay đổi mật khẩu cho tài khoản này.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg text-xs">
+                      {passwordError && (
+                        <div className="flex items-start gap-2 p-3 text-xs text-red-400 bg-red-950/30 border border-red-800/40 rounded-xl">
+                          <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                          <span>{passwordError}</span>
+                        </div>
+                      )}
+
+                      {passwordSuccess && (
+                        <div className="flex items-center gap-2 p-3 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 rounded-xl">
+                          <CheckCircle2 size={15} className="shrink-0" />
+                          <span>{passwordSuccess}</span>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[11px] text-[#8E8E9E] mb-1.5 font-medium">
+                          Mật khẩu hiện tại
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            required
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Nhập mật khẩu hiện tại của bạn"
+                            className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword((prev) => !prev)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                          >
+                            {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-[#8E8E9E] mb-1.5 font-medium">
+                          Mật khẩu mới
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            required
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Tối thiểu 8 ký tự"
+                            className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword((prev) => !prev)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                          >
+                            {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-[#8E8E9E] mb-1.5 font-medium">
+                          Xác nhận mật khẩu mới
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmNewPassword ? 'text' : 'password'}
+                            required
+                            value={confirmNewPassword}
+                            onChange={(e) => setConfirmNewPassword(e.target.value)}
+                            placeholder="Nhập lại mật khẩu mới"
+                            className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmNewPassword((prev) => !prev)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                          >
+                            {showConfirmNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isChangingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+                        className="py-3 px-6 rounded-xl bg-[#FCFC65] hover:bg-[#EAEA48] disabled:opacity-50 text-[#08080C] font-bold text-xs shadow-neon transition cursor-pointer mt-2"
+                      >
+                        {isChangingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             )}

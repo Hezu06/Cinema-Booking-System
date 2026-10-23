@@ -6,6 +6,9 @@ import {
     googleAuthSchema,
     verifyEmailSchema,
     resendVerificationSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
+    changePasswordSchema,
 } from "../validators/auth.validator.js";
 import { AuthService } from "../../business/services/auth.service.js";
 import { userRepository } from "../../data-access/repositories/user.repository.js";
@@ -297,6 +300,170 @@ export async function resendVerification(req: Request, res: Response) {
         return res.status(500).json({
             success: false,
             message: "Đã xảy ra lỗi khi gửi lại mã xác thực",
+            ...(process.env.NODE_ENV !== "production" && error instanceof Error
+                ? { details: error.message }
+                : {}),
+        });
+    }
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+    try {
+        const input = forgotPasswordSchema.parse(req.body);
+
+        await authService.forgotPassword(input);
+
+        return res.status(200).json({
+            success: true,
+            message: "Mã xác thực đặt lại mật khẩu đã được gửi tới email của bạn",
+        });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({
+                success: false,
+                message: "Email không hợp lệ",
+                errors: error.issues,
+            });
+        }
+
+        if (error instanceof Error) {
+            if (error.message.includes("Không tìm thấy tài khoản")) {
+                return res.status(404).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+            if (error.message.includes("Vui lòng đợi")) {
+                return res.status(429).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+            if (error.message.includes("Google")) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+        }
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Đã xảy ra lỗi khi yêu cầu đặt lại mật khẩu",
+            ...(process.env.NODE_ENV !== "production" && error instanceof Error
+                ? { details: error.message }
+                : {}),
+        });
+    }
+}
+
+export async function resetPassword(req: Request, res: Response) {
+    try {
+        const input = resetPasswordSchema.parse(req.body);
+
+        await authService.resetPassword(input);
+
+        return res.status(200).json({
+            success: true,
+            message: "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới",
+        });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({
+                success: false,
+                message: "Dữ liệu đặt lại mật khẩu không hợp lệ",
+                errors: error.issues,
+            });
+        }
+
+        if (error instanceof Error) {
+            if (error.message.includes("Không tìm thấy tài khoản")) {
+                return res.status(404).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+            if (
+                error.message.includes("không chính xác") ||
+                error.message.includes("hết hạn")
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+        }
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Đã xảy ra lỗi trong quá trình đặt lại mật khẩu",
+            ...(process.env.NODE_ENV !== "production" && error instanceof Error
+                ? { details: error.message }
+                : {}),
+        });
+    }
+}
+
+export async function changePassword(req: Request, res: Response) {
+    try {
+        const input = changePasswordSchema.parse(req.body);
+        const authenticatedRequest = req as AuthenticatedRequest;
+        const userId = authenticatedRequest.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Vui lòng đăng nhập để thực hiện chức năng này",
+            });
+        }
+
+        await authService.changePassword({
+            userId,
+            currentPassword: input.currentPassword,
+            newPassword: input.newPassword,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Đổi mật khẩu thành công",
+        });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({
+                success: false,
+                message: "Dữ liệu đổi mật khẩu không hợp lệ",
+                errors: error.issues,
+            });
+        }
+
+        if (error instanceof Error) {
+            if (error.message === "Người dùng không tồn tại") {
+                return res.status(404).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+            if (
+                error.message.includes("không chính xác") ||
+                error.message.includes("không được trùng") ||
+                error.message.includes("Google OAuth")
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+        }
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Đã xảy ra lỗi khi thay đổi mật khẩu",
             ...(process.env.NODE_ENV !== "production" && error instanceof Error
                 ? { details: error.message }
                 : {}),

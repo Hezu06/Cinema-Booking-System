@@ -5,6 +5,10 @@ export interface User {
   phone: string;
   role: 'CUSTOMER' | 'ADMIN';
   status: 'ACTIVE' | 'BLOCKED';
+  provider?: 'LOCAL' | 'GOOGLE';
+  isVerified?: boolean;
+  avatar?: string | null;
+  googleId?: string | null;
 }
 
 export interface Movie {

@@ -6,6 +6,9 @@ import type {
     AuthResult,
     VerifyEmailDTO,
     ResendVerificationDTO,
+    ForgotPasswordDTO,
+    ResetPasswordDTO,
+    ChangePasswordDTO,
 } from "../interfaces/auth.interface.js";
 import type { EmailService } from "../interfaces/email.interface.js";
 import { AuthProvider, type SafeUser, type User } from "../models/user.model.js";
@@ -311,6 +314,105 @@ export class AuthService {
                 otpCode
             );
         }
+
+        return true;
+    }
+
+    async forgotPassword(input: ForgotPasswordDTO): Promise<boolean> {
+        const normalizedEmail = input.email.trim().toLowerCase();
+        const user = await this.userRepository.findByEmail(normalizedEmail);
+
+        if (!user) {
+            throw new Error("Không tìm thấy tài khoản với email này");
+        }
+
+        if (user.provider === AuthProvider.GOOGLE && !user.passwordHash) {
+            throw new Error("Tài khoản này được đăng ký qua Google. Vui lòng đăng nhập bằng Google.");
+        }
+
+        const now = Date.now();
+        // Rate-limit check: cooldown of 60 seconds
+        if (user.resetPasswordExpiresAt) {
+            const timeLeft = user.resetPasswordExpiresAt.getTime() - now;
+            // Valid for 15m (15 * 60 * 1000 = 900,000ms).
+            // If timeLeft > 14m, it was issued less than 60s ago.
+            if (timeLeft > 14 * 60 * 1000) {
+                const waitSeconds = Math.ceil((timeLeft - 14 * 60 * 1000) / 1000);
+                throw new Error(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu mã mới`);
+            }
+        }
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetPasswordExpiresAt = new Date(now + 15 * 60 * 1000);
+
+        await this.userRepository.update(user.id, {
+            resetPasswordToken: otpCode,
+            resetPasswordExpiresAt,
+        });
+
+        if (this.emailService) {
+            await this.emailService.sendPasswordResetEmail(
+                user.email,
+                user.fullName,
+                otpCode
+            );
+        }
+
+        return true;
+    }
+
+    async resetPassword(input: ResetPasswordDTO): Promise<boolean> {
+        const email = input.email.trim().toLowerCase();
+        const code = input.code.trim();
+
+        const user = await this.userRepository.findByEmail(email);
+        if (!user) {
+            throw new Error("Không tìm thấy tài khoản với email này");
+        }
+
+        if (!user.resetPasswordToken || user.resetPasswordToken !== code) {
+            throw new Error("Mã xác thực không chính xác");
+        }
+
+        if (!user.resetPasswordExpiresAt || user.resetPasswordExpiresAt.getTime() < Date.now()) {
+            throw new Error("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã đặt lại mật khẩu mới");
+        }
+
+        const passwordHash = await bcrypt.hash(input.newPassword, 12);
+
+        await this.userRepository.update(user.id, {
+            passwordHash,
+            resetPasswordToken: null,
+            resetPasswordExpiresAt: null,
+            isVerified: true,
+        });
+
+        return true;
+    }
+
+    async changePassword(input: ChangePasswordDTO): Promise<boolean> {
+        const user = await this.userRepository.findWithPasswordById(input.userId);
+        if (!user) {
+            throw new Error("Người dùng không tồn tại");
+        }
+
+        if (!user.passwordHash) {
+            throw new Error("Tài khoản của bạn đăng nhập qua Google OAuth, không sử dụng mật khẩu.");
+        }
+
+        const isMatch = await bcrypt.compare(input.currentPassword, user.passwordHash);
+        if (!isMatch) {
+            throw new Error("Mật khẩu hiện tại không chính xác");
+        }
+
+        if (input.currentPassword === input.newPassword) {
+            throw new Error("Mật khẩu mới không được trùng với mật khẩu hiện tại");
+        }
+
+        const newHash = await bcrypt.hash(input.newPassword, 12);
+        await this.userRepository.update(user.id, {
+            passwordHash: newHash,
+        });
 
         return true;
     }

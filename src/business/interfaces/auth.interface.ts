@@ -32,6 +32,22 @@ export interface RegisterResult {
   message: string;
 }
 
+export interface ForgotPasswordDTO {
+  email: string;
+}
+
+export interface ResetPasswordDTO {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordDTO {
+  userId: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthResult {
   user: SafeUser;
   accessToken: string;
