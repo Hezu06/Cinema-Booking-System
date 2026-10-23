@@ -31,7 +31,33 @@ export class AuthService {
         const existingUser = await this.userRepository.findByEmail(input.email);
 
         if (existingUser) {
-            throw new Error("Email đã được sử dụng");
+            if (existingUser.isVerified) {
+                throw new Error("Email đã được sử dụng");
+            }
+
+            // Tài khoản chưa xác thực: cho phép cập nhật lại thông tin, tạo mã OTP mới và gửi lại email
+            const passwordHash = await bcrypt.hash(input.password, 12);
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const verificationExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+            await this.userRepository.update(existingUser.id, {
+                fullName: input.fullName,
+                phone: input.phone,
+                passwordHash,
+                verificationToken: otpCode,
+                verificationExpiresAt,
+            });
+
+            if (this.emailService) {
+                await this.emailService.sendVerificationEmail(
+                    input.email,
+                    input.fullName,
+                    otpCode
+                );
+            }
+
+            const safeUser = await this.userRepository.findById(existingUser.id);
+            return safeUser!;
         }
 
         const passwordHash = await bcrypt.hash(input.password, 12);
@@ -246,7 +272,7 @@ export class AuthService {
         return this.generateAuthResult(updatedUser);
     }
 
-    async resendVerificationCode(email: string): Promise<boolean> {
+    async resendVerificationCode(email: string, force: boolean = false): Promise<boolean> {
         const normalizedEmail = email.trim().toLowerCase();
         const user = await this.userRepository.findByEmail(normalizedEmail);
 
@@ -260,7 +286,7 @@ export class AuthService {
 
         const now = Date.now();
         // Rate-limit check: cooldown of 60 seconds
-        if (user.verificationExpiresAt) {
+        if (!force && user.verificationExpiresAt) {
             const timeLeft = user.verificationExpiresAt.getTime() - now;
             // Originally valid for 15m (15 * 60 * 1000 = 900,000ms).
             // If timeLeft > 14m, it was issued less than 60s ago.

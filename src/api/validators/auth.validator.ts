@@ -37,6 +37,7 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 
 export const resendVerificationSchema = z.object({
     email: z.string().trim().toLowerCase().email("Email không hợp lệ"),
+    force: z.boolean().optional(),
 });
 
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
