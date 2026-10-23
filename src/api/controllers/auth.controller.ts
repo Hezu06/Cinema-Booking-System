@@ -256,7 +256,7 @@ export async function resendVerification(req: Request, res: Response) {
     try {
         const input = resendVerificationSchema.parse(req.body);
 
-        await authService.resendVerificationCode(input.email);
+        await authService.resendVerificationCode(input.email, input.force);
 
         return res.status(200).json({
             success: true,

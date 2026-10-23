@@ -236,9 +236,19 @@ export const AuthModal: React.FC = () => {
                   {error.includes('chưa được kích hoạt') && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
+                        const target = unverifiedEmail || email;
                         setError(null);
-                        openAuthModal('verify', email);
+                        setSuccessMessage('Đang tạo và gửi mã xác thực mới đến email...');
+                        openAuthModal('verify', target);
+                        try {
+                          const msg = await resendVerification(target, true);
+                          setSuccessMessage(msg);
+                          setResendCountdown(60);
+                          setExpiresCountdown(15 * 60);
+                        } catch (err: any) {
+                          setError(err.message || 'Không thể gửi lại mã xác thực.');
+                        }
                       }}
                       className="ml-2 underline font-bold text-[#FCFC65] hover:text-white cursor-pointer"
                     >
