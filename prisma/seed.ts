@@ -299,8 +299,8 @@ async function main() {
         if (roomSeats.length > 0) {
           const showtimeSeatsData = roomSeats.map((seat, idx) => {
             let seatPrice = basePrice;
-            if (seat.type === "VIP") seatPrice += 15000;
-            if (seat.type === "COUPLE") seatPrice = basePrice * 2;
+            if (seat.type === "VIP") seatPrice = Math.round(basePrice * 1.25);
+            if (seat.type === "COUPLE") seatPrice = Math.round(basePrice * 1.5);
 
             // Pre-book 2 seats per showtime for realistic UI
             const isPreBooked = idx === 1 || idx === 2;

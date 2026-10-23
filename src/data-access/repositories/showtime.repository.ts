@@ -113,15 +113,24 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
       });
       const seats = await transaction.seat.findMany({
         where: { roomId: data.roomId, active: true },
-        select: { id: true },
+        select: { id: true, type: true },
       });
       if (seats.length > 0) {
+        const base = Number(data.basePrice);
         await transaction.showtimeSeat.createMany({
-          data: seats.map((seat) => ({
-            showtimeId: created.id,
-            seatId: seat.id,
-            price: data.basePrice,
-          })),
+          data: seats.map((seat) => {
+            let seatPrice = base;
+            if (seat.type === "VIP") {
+              seatPrice = Math.round(base * 1.25);
+            } else if (seat.type === "COUPLE") {
+              seatPrice = Math.round(base * 1.5);
+            }
+            return {
+              showtimeId: created.id,
+              seatId: seat.id,
+              price: seatPrice,
+            };
+          }),
         });
       }
       return created;
@@ -151,21 +160,39 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
           await transaction.showtimeSeat.deleteMany({ where: { showtimeId: id } });
           const seats = await transaction.seat.findMany({
             where: { roomId: data.roomId, active: true },
-            select: { id: true },
+            select: { id: true, type: true },
           });
           if (seats.length > 0) {
+            const base = Number(data.basePrice ?? current.basePrice);
             await transaction.showtimeSeat.createMany({
-              data: seats.map((seat) => ({
-                showtimeId: id,
-                seatId: seat.id,
-                price: data.basePrice ?? Number(current.basePrice),
-              })),
+              data: seats.map((seat) => {
+                let seatPrice = base;
+                if (seat.type === "VIP") {
+                  seatPrice = Math.round(base * 1.25);
+                } else if (seat.type === "COUPLE") {
+                  seatPrice = Math.round(base * 1.5);
+                }
+                return {
+                  showtimeId: id,
+                  seatId: seat.id,
+                  price: seatPrice,
+                };
+              }),
             });
           }
         } else if (data.basePrice !== undefined) {
+          const newBase = Number(data.basePrice);
           await transaction.showtimeSeat.updateMany({
-            where: { showtimeId: id, status: "AVAILABLE" },
-            data: { price: data.basePrice },
+            where: { showtimeId: id, status: "AVAILABLE", seat: { type: "STANDARD" } },
+            data: { price: newBase },
+          });
+          await transaction.showtimeSeat.updateMany({
+            where: { showtimeId: id, status: "AVAILABLE", seat: { type: "VIP" } },
+            data: { price: Math.round(newBase * 1.25) },
+          });
+          await transaction.showtimeSeat.updateMany({
+            where: { showtimeId: id, status: "AVAILABLE", seat: { type: "COUPLE" } },
+            data: { price: Math.round(newBase * 1.5) },
           });
         }
         return result;
