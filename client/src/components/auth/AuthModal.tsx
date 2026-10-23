@@ -26,6 +26,7 @@ export const AuthModal: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -121,10 +122,10 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleResendCode = async () => {
-    if ((resendCountdown > 0 && expiresCountdown > 0) || isSubmitting) return;
+    if ((resendCountdown > 0 && expiresCountdown > 0) || isResending) return;
     setError(null);
     setSuccessMessage(null);
-    setIsSubmitting(true);
+    setIsResending(true);
     try {
       const msg = await resendVerification(targetEmail);
       setSuccessMessage(msg);
@@ -133,7 +134,7 @@ export const AuthModal: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Không thể gửi lại mã xác thực.');
     } finally {
-      setIsSubmitting(false);
+      setIsResending(false);
     }
   };
 
@@ -307,10 +308,12 @@ export const AuthModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={isSubmitting || (resendCountdown > 0 && expiresCountdown > 0)}
+                    disabled={isResending || isSubmitting || (resendCountdown > 0 && expiresCountdown > 0)}
                     className="text-xs text-[#8E8E9E] hover:text-white disabled:opacity-50 transition cursor-pointer inline-flex items-center justify-center gap-1.5"
                   >
-                    {resendCountdown > 0 && expiresCountdown > 0 ? (
+                    {isResending ? (
+                      <span className="text-[#FCFC65] animate-pulse">Đang gửi lại mã mới...</span>
+                    ) : resendCountdown > 0 && expiresCountdown > 0 ? (
                       <>
                         <span>Gửi lại mã sau</span>
                         <span className="font-mono text-[#FCFC65] font-semibold">{resendCountdown}s</span>
