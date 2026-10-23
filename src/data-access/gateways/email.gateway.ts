@@ -2,6 +2,10 @@ import type {
     BookingTicketEmailData,
     EmailService,
 } from "../../business/interfaces/email.interface.js";
+import {
+    CircuitBreaker,
+    type CircuitBreakerOptions,
+} from "../resilience/circuit-breaker.js";
 
 function formatVietnamDateTime(date: Date): string {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -16,69 +20,89 @@ function formatVietnamDateTime(date: Date): string {
     }).format(new Date(date));
 }
 
+export interface SendMailInternalOptions {
+    to: string;
+    name: string;
+    subject: string;
+    html: string;
+    text: string;
+    otpCode?: string;
+    typeLabel: string;
+}
+
 export class BrevoEmailGateway implements EmailService {
-    private async sendMailInternal({
-        to,
-        name,
-        subject,
-        html,
-        text,
-        otpCode,
-        typeLabel,
-    }: {
-        to: string;
-        name: string;
-        subject: string;
-        html: string;
-        text: string;
-        otpCode?: string;
-        typeLabel: string;
-    }): Promise<boolean> {
-        const brevoApiKey = process.env.BREVO_API_KEY?.replace(/['"]/g, "").trim();
-        const senderEmail = process.env.BREVO_SENDER?.replace(/['"]/g, "").trim() || "hyo.trng@gmail.com";
+    public readonly breaker: CircuitBreaker<[SendMailInternalOptions], boolean>;
 
-        // 1. Send via Brevo HTTPS REST API (Cổng 443 HTTPS tương thích hoàn toàn Render Free)
-        if (brevoApiKey) {
-            try {
-                const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-                    method: "POST",
-                    headers: {
-                        "api-key": brevoApiKey,
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                    },
-                    body: JSON.stringify({
-                        sender: { name: "Sọt Phim Cinema", email: senderEmail },
-                        to: [{ email: to, name }],
-                        subject,
-                        htmlContent: html,
-                        textContent: text,
-                    }),
-                });
+    constructor(circuitBreakerOptions?: Partial<CircuitBreakerOptions<[SendMailInternalOptions], boolean>>) {
+        this.breaker = new CircuitBreaker<[SendMailInternalOptions], boolean>({
+            name: "BrevoEmailGateway",
+            timeoutMs: circuitBreakerOptions?.timeoutMs ?? Number(process.env.CIRCUIT_BREAKER_TIMEOUT ?? 3000),
+            errorThresholdPercentage: circuitBreakerOptions?.errorThresholdPercentage ?? Number(process.env.CIRCUIT_BREAKER_ERROR_THRESHOLD ?? 50),
+            resetTimeoutMs: circuitBreakerOptions?.resetTimeoutMs ?? Number(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT ?? 10000),
+            volumeThreshold: circuitBreakerOptions?.volumeThreshold ?? Number(process.env.CIRCUIT_BREAKER_VOLUME_THRESHOLD ?? 5),
+            enabled: circuitBreakerOptions?.enabled ?? (process.env.CIRCUIT_BREAKER_ENABLED !== "false"),
+            fallback: (options: SendMailInternalOptions) => this.fallbackSimulation(options),
+            ...circuitBreakerOptions,
+        });
 
-                if (res.ok) {
-                    console.log(`✅ [${typeLabel}] Email successfully sent via Brevo API (HTTPS) to: ${to}`);
-                    return true;
-                }
+        this.breaker.on("stateChange", ({ breaker, from, to }) => {
+            console.warn(`⚡ [CIRCUIT BREAKER] State changed for [${breaker}]: ${from} -> ${to}`);
+        });
+    }
 
-                const errData = await res.json().catch(() => ({}));
-                console.error(`❌ Brevo API error (${typeLabel}):`, errData);
-            } catch (err) {
-                console.error(`❌ Failed to send via Brevo API (${typeLabel}):`, err);
-            }
-        }
-
-        // 2. Fallback / Dev / Simulation Mode (Hiển thị trực quan trong console khi chưa có API key)
+    private fallbackSimulation(opts: SendMailInternalOptions): boolean {
         console.log("\n=======================================================");
-        console.log(`📧 [EMAIL GATEWAY - ${typeLabel.toUpperCase()} - DEV / SIMULATION MODE]`);
-        console.log(`To: ${to} (${name})`);
-        console.log(`Subject: ${subject}`);
-        if (otpCode) {
-            console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${otpCode}`);
+        console.log(`🛡️ [CIRCUIT BREAKER - FALLBACK / SIMULATION MODE]`);
+        console.log(`Gate: BrevoEmailGateway | State: ${this.breaker.getState()}`);
+        console.log(`To: ${opts.to} (${opts.name})`);
+        console.log(`Subject: ${opts.subject}`);
+        if (opts.otpCode) {
+            console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${opts.otpCode}`);
             console.log("Thời hạn hiệu lực: 15 phút");
         }
+        console.log("Status: Preserved & Logged locally to prevent cascading failure.");
         console.log("=======================================================\n");
         return true;
+    }
+
+    private async executeRawBrevoCall(opts: SendMailInternalOptions): Promise<boolean> {
+        const brevoApiKey = process.env.BREVO_API_KEY?.replace(/['"]/g, "").trim();
+        const senderEmail = process.env.BREVO_SENDER?.replace(/['"]/g, "").trim() || "hyo.trng@gmail.com";
+        const brevoEndpoint = process.env.BREVO_API_URL?.trim() || "https://api.brevo.com/v3/smtp/email";
+
+        if (!brevoApiKey && !process.env.BREVO_API_URL) {
+            // No API key configured -> fallback simulation mode directly
+            return this.fallbackSimulation(opts);
+        }
+
+        const res = await fetch(brevoEndpoint, {
+            method: "POST",
+            headers: {
+                "api-key": brevoApiKey || "test-key",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body: JSON.stringify({
+                sender: { name: "Sọt Phim Cinema", email: senderEmail },
+                to: [{ email: opts.to, name: opts.name }],
+                subject: opts.subject,
+                htmlContent: opts.html,
+                textContent: opts.text,
+            }),
+        });
+
+        if (res.ok) {
+            console.log(`✅ [${opts.typeLabel}] Email successfully sent via Brevo API (HTTPS) to: ${opts.to}`);
+            return true;
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        console.error(`❌ Brevo API error (${opts.typeLabel}):`, errData);
+        throw new Error(`BREVO_API_ERROR: HTTP ${res.status}`);
+    }
+
+    private async sendMailInternal(options: SendMailInternalOptions): Promise<boolean> {
+        return this.breaker.execute((opts) => this.executeRawBrevoCall(opts), options);
     }
 
     async sendVerificationEmail(to: string, name: string, otpCode: string): Promise<boolean> {

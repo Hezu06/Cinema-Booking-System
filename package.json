@@ -16,6 +16,8 @@
     "seed:showtimes": "tsx scripts/seed-showtimes.ts",
     "test:concurrency": "tsx scripts/test-concurrency.ts",
     "test:vnpay": "tsx scripts/test-vnpay.ts",
+    "benchmark:resilience": "tsx scripts/benchmark-circuit-breaker.ts",
+    "benchmark:circuit-breaker": "tsx scripts/benchmark-circuit-breaker.ts",
     "client:dev": "npm run dev --prefix client",
     "client:build": "npm run build --prefix client"
   },
