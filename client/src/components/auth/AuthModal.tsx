@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, Eye, EyeOff, MailCheck } from 'lucide-react';
+import { X, AlertCircle, Eye, EyeOff, MailCheck, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { TicketorLogo } from '../layout/TicketorLogo';
 
@@ -31,11 +31,37 @@ export const AuthModal: React.FC = () => {
 
   // OTP Verification state
   const [otpCode, setOtpCode] = useState('');
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendCountdown, setResendCountdown] = useState(60);
+  const [expiresCountdown, setExpiresCountdown] = useState(15 * 60);
 
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
     '1095220108760-2q38fpnb60jaciqhe5i28co78eupi1ul.apps.googleusercontent.com';
+
+  // Format seconds to mm:ss
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Reset countdowns when entering verify mode
+  useEffect(() => {
+    if (authModalMode === 'verify') {
+      setExpiresCountdown(15 * 60);
+      setResendCountdown(60);
+      setExpiresCountdown(15 * 60);
+    }
+  }, [authModalMode]);
+
+  // Countdown timer for 15-minute OTP expiration
+  useEffect(() => {
+    if (authModalMode !== 'verify' || expiresCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setExpiresCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [authModalMode, expiresCountdown]);
 
   // Countdown timer for resending OTP
   useEffect(() => {
@@ -85,6 +111,7 @@ export const AuthModal: React.FC = () => {
       } else {
         await register({ fullName, email, phone: phone || '0900000000', password });
         setResendCountdown(60);
+      setExpiresCountdown(15 * 60);
       }
     } catch (err: any) {
       setError(err.message || 'Authentication error. Please try again.');
@@ -94,7 +121,7 @@ export const AuthModal: React.FC = () => {
   };
 
   const handleResendCode = async () => {
-    if (resendCountdown > 0 || isSubmitting) return;
+    if ((resendCountdown > 0 && expiresCountdown > 0) || isSubmitting) return;
     setError(null);
     setSuccessMessage(null);
     setIsSubmitting(true);
@@ -102,6 +129,7 @@ export const AuthModal: React.FC = () => {
       const msg = await resendVerification(targetEmail);
       setSuccessMessage(msg);
       setResendCountdown(60);
+      setExpiresCountdown(15 * 60);
     } catch (err: any) {
       setError(err.message || 'Không thể gửi lại mã xác thực.');
     } finally {
@@ -231,9 +259,18 @@ export const AuthModal: React.FC = () => {
               /* OTP VERIFICATION FORM */
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-[11px] text-[#8E8E9E] mb-2 text-center">
-                    Mã xác thực (OTP Code)
-                  </label>
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <label className="text-[11px] text-[#8E8E9E]">
+                      Mã xác thực (OTP Code)
+                    </label>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <Clock size={12} className={expiresCountdown > 60 ? "text-[#FCFC65]" : "text-red-400 animate-pulse"} />
+                      <span className="text-[#8E8E9E]">Mã hết hạn sau:</span>
+                      <span className={`font-mono font-bold ${expiresCountdown > 60 ? "text-[#FCFC65]" : "text-red-400"}`}>
+                        {formatTime(expiresCountdown)}
+                      </span>
+                    </div>
+                  </div>
                   <input
                     type="text"
                     required
@@ -244,15 +281,22 @@ export const AuthModal: React.FC = () => {
                     placeholder="123456"
                     className="w-full bg-[#181824] border border-[#282838] rounded-xl px-4 py-3 text-center text-2xl font-bold font-mono tracking-[0.4em] text-[#FCFC65] placeholder-[#404050] focus:outline-none focus:border-[#FCFC65]"
                   />
-                  <p className="text-[11px] text-[#656578] text-center mt-2">
-                    Mã có hiệu lực trong vòng 15 phút. Vui lòng kiểm tra hộp thư (hoặc mục Spam).
-                  </p>
+                  {expiresCountdown > 0 ? (
+                    <p className="text-[11px] text-[#656578] text-center mt-2">
+                      Mã có hiệu lực trong vòng 15 phút. Vui lòng kiểm tra hộp thư (hoặc mục Spam).
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-red-400 font-medium text-center mt-2 flex items-center justify-center gap-1">
+                      <AlertCircle size={13} />
+                      Mã xác thực 15 phút đã hết hạn. Vui lòng bấm "Gửi lại mã" bên dưới.
+                    </p>
+                  )}
                 </div>
 
                 {/* Submit OTP */}
                 <button
                   type="submit"
-                  disabled={isSubmitting || otpCode.length !== 6}
+                  disabled={isSubmitting || otpCode.length !== 6 || expiresCountdown === 0}
                   className="w-full py-3 rounded-xl bg-[#FCFC65] hover:bg-[#EAEA48] disabled:opacity-50 text-[#08080C] font-bold text-xs shadow-neon transition cursor-pointer"
                 >
                   {isSubmitting ? 'Đang xác thực...' : 'Xác thực & Đăng nhập'}
@@ -263,12 +307,17 @@ export const AuthModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={isSubmitting || resendCountdown > 0}
-                    className="text-xs text-[#8E8E9E] hover:text-white disabled:opacity-50 transition cursor-pointer"
+                    disabled={isSubmitting || (resendCountdown > 0 && expiresCountdown > 0)}
+                    className="text-xs text-[#8E8E9E] hover:text-white disabled:opacity-50 transition cursor-pointer inline-flex items-center justify-center gap-1.5"
                   >
-                    {resendCountdown > 0
-                      ? `Gửi lại mã sau ${resendCountdown}s`
-                      : 'Không nhận được mã? Gửi lại mã'}
+                    {resendCountdown > 0 && expiresCountdown > 0 ? (
+                      <>
+                        <span>Gửi lại mã sau</span>
+                        <span className="font-mono text-[#FCFC65] font-semibold">{resendCountdown}s</span>
+                      </>
+                    ) : (
+                      'Không nhận được mã? Gửi lại mã'
+                    )}
                   </button>
                 </div>
               </form>
