@@ -1,4 +1,4 @@
-import type { ApiResponse, HoldSeatsResponse, Payment } from '../types';
+import type { ApiResponse, HoldSeatsResponse, Payment, Movie, Room, Cinema, BookingDetail, Showtime } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -158,4 +158,98 @@ export const api = {
     }),
   getBookingPayments: (bookingId: string) =>
     request<Payment[]>(`/payments/booking/${bookingId}`),
+  // ==========================================
+  // ADMIN API ENDPOINTS (Role: ADMIN only)
+  // ==========================================
+  adminGetBookings: (params?: { status?: string }) => {
+    const qs = params?.status ? `?status=${params.status}` : '';
+    return request<BookingDetail[]>(`/bookings${qs}`);
+  },
+  adminCancelBooking: (id: string, reason?: string) =>
+    request(`/bookings/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason || 'Admin cancelled booking' }),
+    }),
+
+  adminSyncMovies: (payload?: { autoCreateShowtimes?: boolean; markEndedOlderThanDays?: number }) =>
+    request<{
+      totalFetched: number;
+      added: number;
+      updated: number;
+      markedEnded: number;
+      showtimesCreated: number;
+      details: Array<{ title: string; action: string; status: string }>;
+    }>('/movies/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload || { autoCreateShowtimes: true, markEndedOlderThanDays: 60 }),
+    }),
+  adminCreateMovie: (payload: {
+    title: string;
+    description: string;
+    durationMinutes: number;
+    genre: string;
+    releaseDate: string;
+    posterUrl: string;
+    trailerUrl?: string;
+    status: 'NOW_SHOWING' | 'COMING_SOON' | 'ENDED';
+  }) =>
+    request<Movie>('/movies', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateMovie: (id: string, payload: Partial<Movie>) =>
+    request<Movie>(`/movies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteMovie: (id: string) =>
+    request(`/movies/${id}`, {
+      method: 'DELETE',
+    }),
+
+  adminCreateShowtime: (payload: {
+    movieId: string;
+    roomId: string;
+    startTime: string;
+    endTime: string;
+    basePrice: number;
+    status?: 'SCHEDULED' | 'CANCELLED';
+  }) =>
+    request<Showtime>('/showtimes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateShowtime: (id: string, payload: Partial<Showtime>) =>
+    request<Showtime>(`/showtimes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteShowtime: (id: string) =>
+    request(`/showtimes/${id}`, {
+      method: 'DELETE',
+    }),
+
+  adminGetRooms: (cinemaId?: string) => {
+    const qs = cinemaId ? `?cinemaId=${cinemaId}` : '';
+    return request<Room[]>(`/rooms${qs}`);
+  },
+  adminCreateRoom: (payload: { cinemaId: string; name: string; type: string; capacity: number }) =>
+    request<Room>('/rooms', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  adminCreateCinema: (payload: { name: string; address: string; city: string }) =>
+    request<Cinema>('/cinemas', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  adminUpdateCinema: (id: string, payload: Partial<Cinema>) =>
+    request<Cinema>(`/cinemas/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  adminDeleteCinema: (id: string) =>
+    request(`/cinemas/${id}`, {
+      method: 'DELETE',
+    }),
 };

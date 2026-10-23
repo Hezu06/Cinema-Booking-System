@@ -14,6 +14,8 @@ import { TicketSuccessPage } from './pages/TicketSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyBookingsPage } from './pages/MyBookingsPage';
 import { PaymentResultPage } from './pages/PaymentResultPage';
+import { AdminRoute } from './components/auth/AdminRoute';
+import { AdminPage } from './pages/AdminPage';
 
 export function App() {
   return (
@@ -50,7 +52,17 @@ export function App() {
 
               {/* User Profile & My Tickets */}
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/my-bookings" element={<MyBookingsPage />} />
+              <Route path="/my-bookings" element={<ProfilePage />} />
+
+              {/* Admin Portal (Protected by AdminRoute) */}
+              <Route
+                path="/admin/*"
+                element={
+                  <AdminRoute>
+                    <AdminPage />
+                  </AdminRoute>
+                }
+              />
             </Routes>
           </main>
           <Footer />

@@ -550,7 +550,16 @@ export const SeatSelectionPage: React.FC = () => {
                     <span className="text-[#FCD34D] font-semibold">Ghế VIP</span>
                   </span>
                   <span className="text-[#FCD34D] font-bold">
-                    {Math.round(Number(showtime.basePrice) * 1.2).toLocaleString('vi-VN')} đ
+                    {Math.round(Number(showtime.basePrice) * 1.25).toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[#A0A0B0]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-[#EC4899]/30 border border-[#EC4899]" />
+                    <span className="text-[#F472B6] font-semibold">Ghế Couple</span>
+                  </span>
+                  <span className="text-[#F472B6] font-bold">
+                    {Math.round(Number(showtime.basePrice) * 1.5).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
@@ -639,6 +648,10 @@ export const SeatSelectionPage: React.FC = () => {
                   <span className="text-[#FCD34D] font-semibold">Ghế VIP</span>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-3.5 rounded bg-[#EC4899]/30 border border-[#EC4899]" />
+                  <span className="text-[#F472B6] font-semibold">Ghế Couple</span>
+                </div>
+                <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-3.5 rounded bg-[#FCFC65] shadow-sm" />
                   <span className="text-[#FCFC65] font-semibold">Đang chọn</span>
                 </div>
@@ -670,13 +683,20 @@ export const SeatSelectionPage: React.FC = () => {
                 <div className="space-y-2 divide-y divide-[#1E1E2C] max-h-60 overflow-y-auto pr-1">
                   {selectedSeats.map((stSeat) => {
                     const isVip = stSeat.seat.type === 'VIP';
+                    const isCouple = stSeat.seat.type === 'COUPLE';
                     return (
                       <div key={stSeat.id} className="flex justify-between items-center pt-2">
                         <div>
                           <div className="font-bold text-white flex items-center gap-1.5">
                             <span className="text-[#FCFC65] font-mono">{stSeat.seat.rowLabel}{stSeat.seat.seatNumber}</span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded ${isVip ? 'bg-[#F59E0B]/20 text-[#FCD34D] border border-[#F59E0B]/40' : 'bg-[#252535] text-gray-300'}`}>
-                              {isVip ? 'VIP' : 'Thường'}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
+                              isCouple
+                                ? 'bg-[#EC4899]/20 text-[#F472B6] border-[#EC4899]/40'
+                                : isVip
+                                ? 'bg-[#F59E0B]/20 text-[#FCD34D] border-[#F59E0B]/40'
+                                : 'bg-[#252535] text-gray-300 border-[#3E3E52]'
+                            }`}>
+                              {isCouple ? 'Couple' : isVip ? 'VIP' : 'Thường'}
                             </span>
                           </div>
                         </div>
