@@ -19,7 +19,8 @@
     "benchmark:resilience": "tsx scripts/benchmark-circuit-breaker.ts",
     "benchmark:circuit-breaker": "tsx scripts/benchmark-circuit-breaker.ts",
     "client:dev": "npm run dev --prefix client",
-    "client:build": "npm run build --prefix client"
+    "client:build": "npm run build --prefix client",
+    "test:google-circuit-breaker": "tsx scripts/test-google-circuit-breaker.ts"
   },
   "repository": {
     "type": "git",

@@ -55,13 +55,13 @@ stateDiagram-v2
 
 | Chỉ số kiểm thử (Google SRE Signals) | TRƯỚC (Không có Circuit Breaker) | SAU (Có Circuit Breaker Pattern) | Mức độ Cải thiện |
 | :--- | :--- | :--- | :--- |
-| **Throughput (Thông lượng)** | **3.2 req/s** | **24.6 req/s** | **Tăng 668.8%** 🚀 |
-| **Tổng thời gian xử lý tải** | **12.62 s** | **1.62 s** | **Nhanh hơn 87.1%** ⚡ |
-| **Độ trễ trung bình (Avg Latency)** | **2522.8 ms** | **204 ms** | **Giảm 91.9%** ⚡ |
-| **Độ trễ phân vị 95 (p95)** | **2544.2 ms** | **819.1 ms** | **Giảm 67.8%** ⚡ |
-| **Độ trễ phân vị 99 (p99)** | **2544.8 ms** | **819.1 ms** | **Giảm 67.8%** ⚡ |
-| **Độ trễ Event Loop (Lag p99)** | **33.18 ms** | **33.18 ms** | **Chống nghẽn đơn luồng** |
-| **Tài nguyên RAM Heap chiếm dụng** | **+3.8 MB** | **+0.3 MB** | **Tiết kiệm bộ nhớ** |
+| **Throughput (Thông lượng)** | **3.2 req/s** | **24.5 req/s** | **Tăng 665.6%** 🚀 |
+| **Tổng thời gian xử lý tải** | **12.62 s** | **1.63 s** | **Nhanh hơn 87.1%** ⚡ |
+| **Độ trễ trung bình (Avg Latency)** | **2522.6 ms** | **204.8 ms** | **Giảm 91.9%** ⚡ |
+| **Độ trễ phân vị 95 (p95)** | **2537.6 ms** | **822 ms** | **Giảm 67.6%** ⚡ |
+| **Độ trễ phân vị 99 (p99)** | **2538.4 ms** | **822.4 ms** | **Giảm 67.6%** ⚡ |
+| **Độ trễ Event Loop (Lag p99)** | **32.82 ms** | **40.53 ms** | **Chống nghẽn đơn luồng** |
+| **Tài nguyên RAM Heap chiếm dụng** | **+3.9 MB** | **+1.3 MB** | **Tiết kiệm bộ nhớ** |
 | **Cơ chế dự phòng (Graceful Fallback)**| Không có (Treo kết nối) | Tự động mô phỏng & lưu trữ an toàn | **100% Khả dụng** |
 
 ---

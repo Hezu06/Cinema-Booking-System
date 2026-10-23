@@ -52,3 +52,14 @@ export interface AuthResult {
   user: SafeUser;
   accessToken: string;
 }
+
+export interface GoogleAuthPayload {
+  sub: string;
+  email: string;
+  name: string;
+  picture: string | null;
+}
+
+export interface GoogleOAuthVerifier {
+  verifyIdToken(idToken: string): Promise<GoogleAuthPayload>;
+}
