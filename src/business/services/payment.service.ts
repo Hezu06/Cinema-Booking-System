@@ -81,7 +81,19 @@ export class PaymentService {
   async inspectReturn(params: Record<string, string>): Promise<{ valid: boolean; payment: PaymentView | null; responseCode: string }> {
     const valid = this.paymentGateway.verifyCallback(params);
     if (!valid) return { valid: false, payment: null, responseCode: "97" };
-    const payment = await this.paymentRepository.findByTxnRef(params.vnp_TxnRef ?? "");
+    const amount = Number(params.vnp_Amount ?? "0") / 100;
+    const transactionNo = params.vnp_TransactionNo;
+    const result = await this.paymentRepository.processCallback({
+      txnRef: params.vnp_TxnRef ?? "",
+      amount,
+      responseCode: params.vnp_ResponseCode ?? "",
+      transactionStatus: params.vnp_TransactionStatus ?? "",
+      ...(transactionNo && transactionNo !== "0" ? { transactionNo } : {}),
+      ...(params.vnp_BankCode ? { bankCode: params.vnp_BankCode } : {}),
+      ...(params.vnp_PayDate ? { payDate: this.parsePayDate(params.vnp_PayDate) } : {}),
+    }, (bookingCode, index) => `${bookingCode}-${index + 1}`);
+
+    const payment = result.payment ?? await this.paymentRepository.findByTxnRef(params.vnp_TxnRef ?? "");
     return { valid: true, payment, responseCode: params.vnp_ResponseCode ?? "" };
   }
 

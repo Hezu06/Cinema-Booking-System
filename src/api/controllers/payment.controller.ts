@@ -80,7 +80,10 @@ export class PaymentController {
   vnpayReturn = async (request: Request, response: Response) => {
     try {
       const result = await this.paymentService.inspectReturn(queryToStrings(request.query));
-      const resultUrl = process.env.CLIENT_PAYMENT_RESULT_URL;
+      const defaultClientUrl = process.env.NODE_ENV === "production"
+        ? "https://cbs-project8.vercel.app/payment/result"
+        : "http://localhost:5173/payment/result";
+      const resultUrl = process.env.CLIENT_PAYMENT_RESULT_URL || defaultClientUrl;
       if (resultUrl) {
         const url = new URL(resultUrl);
         url.searchParams.set("valid", String(result.valid));
