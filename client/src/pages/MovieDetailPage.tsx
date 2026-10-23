@@ -129,6 +129,160 @@ export const MovieDetailPage: React.FC = () => {
         { score: '9.5', sentiment: 'POSITIVE', author: 'Kim Oanh', date: '04/05/2026', text: 'Cillian Murphy diễn xuất bằng ánh mắt quá xuất thần. Âm nhạc Ludwig Göransson và kỹ thuật dựng phim xứng đáng đạt mọi giải thưởng.' },
       ],
     },
+    'Venom: Kèo Cuối': {
+      director: 'Kelly Marcel',
+      writers: 'Tom Hardy · Kelly Marcel',
+      sceneImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'fyMhvkC3A84',
+      cast: [
+        { name: 'Tom Hardy', character: 'Eddie Brock / Venom', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Chiwetel Ejiofor', character: 'Rex Strickland', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Juno Temple', character: 'Dr. Teddy Payne', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Rhys Ifans', character: 'Martin Moon', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.2', sentiment: 'POSITIVE', author: 'Tuấn Anh', date: '23/10/2026', text: 'Chương cuối hoành tráng và xúc động của cặp đôi Eddie và Venom! Các pha hành động với Symbiote ngoài không gian cực kỳ mãn nhãn.' },
+        { score: '8.5', sentiment: 'POSITIVE', author: 'Thảo My', date: '23/10/2026', text: 'Hài hước và giải trí đỉnh cao. Kỹ xảo CGI của Knull và đàn quái vật rất ấn tượng.' },
+      ],
+    },
+    'Robot Hoang Dã': {
+      director: 'Chris Sanders',
+      writers: 'Peter Brown · Chris Sanders',
+      sceneImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: '67vbA5ZJdKQ',
+      cast: [
+        { name: "Lupita Nyong'o", character: 'Roz (Lồng tiếng)', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Pedro Pascal', character: 'Fink Cáo', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Kit Connor', character: 'Brightbill Ngỗng con', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Bill Nighy', character: 'Longneck', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.8', sentiment: 'POSITIVE', author: 'Khánh Linh', date: '16/10/2026', text: 'Tuyệt tác hoạt hình cảm động nhất năm! Đồ họa màu nước nghệ thuật và thông điệp tình mẫu tử lấy đi nhiều nước mắt.' },
+        { score: '9.0', sentiment: 'POSITIVE', author: 'Huy Hoàng', date: '19/10/2026', text: 'Âm nhạc xuất sắc, tạo hình thiên nhiên hoang dã quá đỗi kỳ vĩ.' },
+      ],
+    },
+    'Transformers Một': {
+      director: 'Josh Cooley',
+      writers: 'Andrew Barrer · Gabriel Ferrari',
+      sceneImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'u2NuUWuwPCM',
+      cast: [
+        { name: 'Chris Hemsworth', character: 'Orion Pax / Optimus Prime', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Brian Tyree Henry', character: 'D-16 / Megatron', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Scarlett Johansson', character: 'Elita-1', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Keegan-Michael Key', character: 'B-127 / Bumblebee', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.4', sentiment: 'POSITIVE', author: 'Đăng Khoa', date: '05/10/2026', text: 'Bộ phim Transformers hay nhất trong 10 năm trở lại đây. Cốt truyện biến đổi từ bạn thành thù của Optimus và Megatron viết rất chặt chẽ.' },
+        { score: '8.8', sentiment: 'POSITIVE', author: 'Minh Quân', date: '08/10/2026', text: 'Hành động dồn dập, hài hước và Cybertron hiện lên lộng lẫy.' },
+      ],
+    },
+    'Cười 2': {
+      director: 'Parker Finn',
+      writers: 'Parker Finn',
+      sceneImage: 'https://images.unsplash.com/photo-1509281373149-e957c6296406?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: '0HY6QFlBzUY',
+      cast: [
+        { name: 'Naomi Scott', character: 'Skye Riley', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Rosemarie DeWitt', character: 'Elizabeth Riley', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Lukas Gage', character: 'Lewis', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Miles Gutierrez-Riley', character: 'Joshua', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '8.6', sentiment: 'POSITIVE', author: 'Phương Linh', date: '20/10/2026', text: 'Kinh dị, căng thẳng tột độ từ đầu đến cuối! Naomi Scott diễn xuất điên loạn quá đỉnh.' },
+        { score: '7.8', sentiment: 'AVERAGE', author: 'Việt Hoàng', date: '22/10/2026', text: 'Jump-scare dày đặc và âm thanh gây ám ảnh tâm lý nặng nề.' },
+      ],
+    },
+    'Joker: Điên Có Đôi': {
+      director: 'Todd Phillips',
+      writers: 'Todd Phillips · Scott Silver',
+      sceneImage: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'xy8aJw1vYHo',
+      cast: [
+        { name: 'Joaquin Phoenix', character: 'Arthur Fleck / Joker', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Lady Gaga', character: 'Harleen Quinzel / Harley Quinn', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Brendan Gleeson', character: 'Jackie Sullivan', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Catherine Keener', character: 'Maryanne Stewart', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '8.2', sentiment: 'POSITIVE', author: 'Thành Long', date: '06/10/2026', text: 'Một hướng đi độc đáo và táo bạo khi kết hợp tâm lý tội phạm với nhạc kịch. Giọng hát của Lady Gaga và diễn xuất của Joaquin rất cuốn hút.' },
+        { score: '7.0', sentiment: 'AVERAGE', author: 'Hải Yến', date: '11/10/2026', text: 'Phim chia rẽ người xem nhưng về mặt thẩm mỹ điện ảnh và ánh sáng thì rất chỉn chu.' },
+      ],
+    },
+    'Võ Sĩ Giác Đấu II': {
+      director: 'Ridley Scott',
+      writers: 'David Scarpa · Peter Craig',
+      sceneImage: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: '4rgYUipGJNo',
+      cast: [
+        { name: 'Paul Mescal', character: 'Lucius Verus', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Pedro Pascal', character: 'Marcus Acacius', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Denzel Washington', character: 'Macrinus', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Connie Nielsen', character: 'Lucilla', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.3', sentiment: 'POSITIVE', author: 'Quốc Đạt', date: 'Gần đây', text: 'Sử thi La Mã hào hùng trở lại! Ridley Scott vẫn chứng minh phong độ lão luyện qua các đại cảnh đấu trường Colosseum ngập nước.' },
+        { score: '8.7', sentiment: 'POSITIVE', author: 'Thùy Chi', date: 'Gần đây', text: 'Denzel Washington diễn vai Macrinus quá ma mãnh và quyền lực.' },
+      ],
+    },
+    'Moana 2: Hành Trình Mới': {
+      director: 'David G. Derrick Jr.',
+      writers: 'David G. Derrick Jr.',
+      sceneImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'hDZ7y8RP5HE',
+      cast: [
+        { name: "Auli'i Cravalho", character: 'Moana (Lồng tiếng)', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Dwayne Johnson', character: 'Maui (Lồng tiếng)', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Alan Tudyk', character: 'Heihei', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.0', sentiment: 'POSITIVE', author: 'Thanh Trúc', date: 'Gần đây', text: 'Hành trình biển khơi mới mẻ và đầy phiêu lưu. Âm nhạc và kỹ xảo sóng nước của Disney đẹp mê hồn.' },
+      ],
+    },
+    'Avatar: Lửa và Tro Tàn': {
+      director: 'James Cameron',
+      writers: 'James Cameron · Rick Jaffa · Amanda Silver',
+      sceneImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'd9MyW72ELq0',
+      cast: [
+        { name: 'Sam Worthington', character: 'Jake Sully', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Zoe Saldaña', character: 'Neytiri', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Sigourney Weaver', character: 'Kiri', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Stephen Lang', character: 'Miles Quaritch', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.7', sentiment: 'POSITIVE', author: 'Hoàng Long', date: 'Gần đây', text: 'Đỉnh cao công nghệ điện ảnh của James Cameron. Thế giới Pandora và Tộc Người Tro chắc chắn sẽ bùng nổ phòng vé 3D/IMAX!' },
+      ],
+    },
+    'Inception': {
+      director: 'Christopher Nolan',
+      writers: 'Christopher Nolan',
+      sceneImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: 'YoHD9XEInc0',
+      cast: [
+        { name: 'Leonardo DiCaprio', character: 'Dom Cobb', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Joseph Gordon-Levitt', character: 'Arthur', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Elliot Page', character: 'Ariadne', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Tom Hardy', character: 'Eames', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.9', sentiment: 'POSITIVE', author: 'Bình An', date: 'Gần đây', text: 'Kinh điển trộm giấc mơ của điện ảnh hiện đại. Xem lại trên màn ảnh rộng vẫn sởn da gà.' },
+      ],
+    },
+    'Deadpool & Wolverine': {
+      director: 'Shawn Levy',
+      writers: 'Ryan Reynolds · Rhett Reese · Paul Wernick',
+      sceneImage: 'https://images.unsplash.com/photo-1509281373149-e957c6296406?w=1200&auto=format&fit=crop&q=80',
+      trailerYoutubeId: '73_1biulkYk',
+      cast: [
+        { name: 'Ryan Reynolds', character: 'Wade Wilson / Deadpool', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Hugh Jackman', character: 'Logan / Wolverine', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80' },
+        { name: 'Emma Corrin', character: 'Cassandra Nova', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+      ],
+      reviews: [
+        { score: '9.1', sentiment: 'POSITIVE', author: 'Tuấn Kiệt', date: 'Gần đây', text: 'Cực kỳ bùng nổ và hài hước! Sự kết hợp giữa Deadpool và Wolverine làm sống lại vũ trụ Marvel.' },
+      ],
+    },
   };
 
   const currentMeta = movieMetaMap[movie.title] || {
@@ -417,19 +571,34 @@ export const MovieDetailPage: React.FC = () => {
               <X size={18} />
             </button>
             <div className="aspect-video w-full">
-              <iframe
-                src={
-                  currentMeta.trailerYoutubeId
-                    ? `https://www.youtube-nocookie.com/embed/${currentMeta.trailerYoutubeId}?autoplay=1&rel=0`
-                    : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(
-                        movie.title + ' official trailer'
-                      )}&autoplay=1`
-                }
-                title={`${movie.title} Trailer`}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              {currentMeta.trailerYoutubeId ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${currentMeta.trailerYoutubeId}?autoplay=1&rel=0`}
+                  title={`${movie.title} Trailer`}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#0C0C12] text-white space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-red-600/20 text-red-500 flex items-center justify-center">
+                    <Play size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold">Trailer chính thức: {movie.title}</h3>
+                  <p className="text-sm text-[#8E8E9E] max-w-md">
+                    Xem trực tiếp video giới thiệu phim chất lượng cao trên kênh YouTube chính thức của nhà phát hành.
+                  </p>
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + ' official trailer')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-colors"
+                  >
+                    <span>Mở trên YouTube</span>
+                    <ExternalLink size={16} />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>
