@@ -9,25 +9,16 @@ import type {
     ForgotPasswordDTO,
     ResetPasswordDTO,
     ChangePasswordDTO,
+    GoogleOAuthVerifier,
 } from "../interfaces/auth.interface.js";
 import type { EmailService } from "../interfaces/email.interface.js";
 import { AuthProvider, type SafeUser, type User } from "../models/user.model.js";
 
-interface GoogleTokenInfoResponse {
-    sub?: string;
-    email?: string;
-    email_verified?: string | boolean;
-    name?: string;
-    picture?: string;
-    aud?: string;
-    error?: string | { message?: string; code?: number };
-    error_description?: string;
-}
-
 export class AuthService {
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly emailService?: EmailService
+        private readonly emailService?: EmailService,
+        private readonly googleOAuthVerifier?: GoogleOAuthVerifier
     ) {}
 
     async register(input: RegisterDTO): Promise<SafeUser> {
@@ -113,90 +104,11 @@ export class AuthService {
     }
 
     async loginWithGoogle(idToken: string): Promise<AuthResult> {
-        let payload: {
-            sub: string;
-            email: string;
-            name: string;
-            picture: string | null;
-        };
-
-        // Development/Testing fallback token
-        if (idToken === "demo_google_token" || idToken.startsWith("demo_google_token_")) {
-            const demoSuffix = idToken.replace("demo_google_token_", "") || "demo";
-            payload = {
-                sub: `google-sub-${demoSuffix}`,
-                email: `google.${demoSuffix}@example.com`,
-                name: `Google User (${demoSuffix})`,
-                picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-            };
-        } else {
-            // Check if token is a 3-part JWT (ID Token) or OAuth 2.0 Access Token
-            const isJwt = idToken.includes(".") && idToken.split(".").length === 3;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            let res: globalThis.Response;
-            try {
-                if (isJwt) {
-                    res = await fetch(
-                        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
-                        { signal: controller.signal }
-                    );
-                } else {
-                    res = await fetch(
-                        "https://www.googleapis.com/oauth2/v3/userinfo",
-                        {
-                            headers: { Authorization: `Bearer ${idToken}` },
-                            signal: controller.signal,
-                        }
-                    );
-                }
-            } catch (err: unknown) {
-                if (err instanceof Error && err.name === "AbortError") {
-                    throw new Error("Kết nối tới dịch vụ xác thực Google quá thời gian (Timeout)");
-                }
-                throw new Error("Không thể kết nối tới máy chủ xác thực Google");
-            } finally {
-                clearTimeout(timeoutId);
-            }
-
-            if (!res.ok) {
-                const errData = (await res.json().catch(() => ({}))) as GoogleTokenInfoResponse;
-                const errorMsg =
-                    typeof errData.error === "object" && errData.error?.message
-                        ? errData.error.message
-                        : errData.error_description || (typeof errData.error === "string" ? errData.error : "Google Token không hợp lệ hoặc đã hết hạn");
-                throw new Error(errorMsg);
-            }
-
-            const data = (await res.json()) as GoogleTokenInfoResponse;
-
-            if (!data.sub || !data.email) {
-                throw new Error("Google Token thiếu thông tin định danh cần thiết");
-            }
-
-            // Verify audience if GOOGLE_CLIENT_ID is configured and aud is returned
-            const expectedClientId = process.env.GOOGLE_CLIENT_ID;
-            if (expectedClientId && data.aud && data.aud !== expectedClientId) {
-                throw new Error("Token không khớp với cấu hình Client ID của ứng dụng");
-            }
-
-            const isEmailVerified =
-                data.email_verified === true || data.email_verified === "true";
-            if (!isEmailVerified) {
-                throw new Error("Email từ tài khoản Google chưa được xác thực");
-            }
-
-            const email = data.email.toLowerCase();
-            const name = data.name || email.split("@")[0] || "Google User";
-
-            payload = {
-                sub: data.sub,
-                email,
-                name,
-                picture: data.picture || null,
-            };
+        if (!this.googleOAuthVerifier) {
+            throw new Error("Dịch vụ xác thực Google chưa được cấu hình");
         }
+
+        const payload = await this.googleOAuthVerifier.verifyIdToken(idToken);
 
         // 1. Check if user already linked with this googleId
         let user = await this.userRepository.findByGoogleId(payload.sub);

@@ -13,9 +13,10 @@ import {
 import { AuthService } from "../../business/services/auth.service.js";
 import { userRepository } from "../../data-access/repositories/user.repository.js";
 import { emailService } from "../../data-access/gateways/email.gateway.js";
+import { googleOAuthGateway } from "../../data-access/gateways/google-oauth.gateway.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
 
-const authService = new AuthService(userRepository, emailService);
+const authService = new AuthService(userRepository, emailService, googleOAuthGateway);
 
 function isPrismaUniqueConstraintError(
     error: unknown
