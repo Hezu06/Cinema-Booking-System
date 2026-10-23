@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, Share2 } from 'lucide-react';
+import { Download, Share2, Mail, CheckCircle2, Loader2 } from 'lucide-react';
 import type { BookingDetail } from '../types';
 import { api } from '../api/client';
 import { BookingStepper } from '../components/booking/BookingStepper';
@@ -11,6 +11,26 @@ export const TicketSuccessPage: React.FC = () => {
   const [cachedReceipt, setCachedReceipt] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleResendEmail = async () => {
+    if (!bookingId) return;
+    setIsResendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const res = await api.resendBookingEmail(bookingId);
+      if (res.success) {
+        setEmailStatus({ type: 'success', message: res.message || 'Đã gửi lại vé vào email của bạn thành công!' });
+      } else {
+        setEmailStatus({ type: 'error', message: res.message || 'Không thể gửi email lúc này.' });
+      }
+    } catch (e: any) {
+      setEmailStatus({ type: 'error', message: e.message || 'Không thể gửi lại email lúc này.' });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
 
   const handleCancel = async () => {
     if (!bookingId) return;
@@ -294,6 +314,35 @@ export const TicketSuccessPage: React.FC = () => {
                   <span className="text-white">{customer.email}</span>
                 </div>
               </div>
+
+              {/* Email Notification Card */}
+              <div className="mt-3 p-3.5 rounded-2xl bg-[#14141E] border border-[#28283C] flex items-start gap-3">
+                <Mail className="text-[#FCFC65] shrink-0 mt-0.5" size={18} />
+                <div className="space-y-1 text-xs">
+                  <p className="text-white font-medium">
+                    Hệ thống đã gửi xác nhận và mã vé điện tử tới email:
+                  </p>
+                  <p className="text-[#FCFC65] font-mono font-semibold">
+                    {customer.email}
+                  </p>
+                  <p className="text-[#8E8E9E] text-[11px]">
+                    (Vui lòng kiểm tra cả hòm thư chính và thư rác / Spam)
+                  </p>
+                </div>
+              </div>
+
+              {emailStatus && (
+                <div
+                  className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                    emailStatus.type === 'success'
+                      ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                  }`}
+                >
+                  {emailStatus.type === 'success' ? <CheckCircle2 size={16} /> : null}
+                  <span>{emailStatus.message}</span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -304,6 +353,19 @@ export const TicketSuccessPage: React.FC = () => {
               >
                 <Download size={15} />
                 <span>In vé / Lưu PDF</span>
+              </button>
+
+              <button
+                onClick={handleResendEmail}
+                disabled={isResendingEmail || booking?.status === 'CANCELLED'}
+                className="px-6 py-3 rounded-xl bg-[#14141E] hover:bg-[#1E1E2C] border border-[#2E2E3E] text-white font-semibold text-xs flex items-center gap-2 transition disabled:opacity-50"
+              >
+                {isResendingEmail ? (
+                  <Loader2 size={15} className="animate-spin text-[#FCFC65]" />
+                ) : (
+                  <Mail size={15} className="text-[#FCFC65]" />
+                )}
+                <span>{isResendingEmail ? 'Đang gửi vé...' : 'Gửi lại vé qua Email'}</span>
               </button>
 
               <button

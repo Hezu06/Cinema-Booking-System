@@ -45,6 +45,7 @@ export interface PaymentCallbackResult {
   rspCode: "00" | "01" | "02" | "04" | "97";
   message: string;
   payment?: PaymentView | undefined;
+  newlyConfirmed?: boolean | undefined;
 }
 
 export interface PaymentRepository {

@@ -4,7 +4,10 @@ import type {
   PaymentGateway,
   PaymentRepository,
 } from "../interfaces/payment.interface.js";
+import type { BookingRepository } from "../interfaces/booking.interface.js";
+import type { EmailService } from "../interfaces/email.interface.js";
 import type { PaymentView } from "../models/payment.model.js";
+import { getClientTicketUrl } from "../utils/client-url.util.js";
 
 function createTxnRef(): string {
   return `PAY-${Date.now().toString(36).toUpperCase()}-${randomUUID().slice(0, 8).toUpperCase()}`;
@@ -14,6 +17,8 @@ export class PaymentService {
   constructor(
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGateway,
+    private readonly bookingRepository?: BookingRepository,
+    private readonly emailService?: EmailService,
   ) {}
 
   async createVnpayPayment(
@@ -58,7 +63,7 @@ export class PaymentService {
     if (!this.paymentGateway.verifyCallback(params)) return { rspCode: "97", message: "Invalid signature" };
     const amount = Number(params.vnp_Amount ?? "0") / 100;
     const transactionNo = params.vnp_TransactionNo;
-    return this.paymentRepository.processCallback({
+    const result = await this.paymentRepository.processCallback({
       txnRef: params.vnp_TxnRef ?? "",
       amount,
       responseCode: params.vnp_ResponseCode ?? "",
@@ -67,6 +72,12 @@ export class PaymentService {
       ...(params.vnp_BankCode ? { bankCode: params.vnp_BankCode } : {}),
       ...(params.vnp_PayDate ? { payDate: this.parsePayDate(params.vnp_PayDate) } : {}),
     }, (bookingCode, index) => `${bookingCode}-${index + 1}`);
+
+    if (result.newlyConfirmed && result.payment) {
+      await this.sendConfirmationEmailSafe(result.payment.bookingId);
+    }
+
+    return result;
   }
 
   async inspectReturn(params: Record<string, string>): Promise<{ valid: boolean; payment: PaymentView | null; responseCode: string }> {
@@ -84,8 +95,44 @@ export class PaymentService {
       ...(params.vnp_PayDate ? { payDate: this.parsePayDate(params.vnp_PayDate) } : {}),
     }, (bookingCode, index) => `${bookingCode}-${index + 1}`);
 
+    if (result.newlyConfirmed && result.payment) {
+      await this.sendConfirmationEmailSafe(result.payment.bookingId);
+    }
+
     const payment = result.payment ?? await this.paymentRepository.findByTxnRef(params.vnp_TxnRef ?? "");
     return { valid: true, payment, responseCode: params.vnp_ResponseCode ?? "" };
+  }
+
+  private async sendConfirmationEmailSafe(bookingId: string): Promise<void> {
+    if (!this.bookingRepository || !this.emailService) return;
+    try {
+      const booking = await this.bookingRepository.findById(bookingId);
+      if (!booking || !booking.user?.email) return;
+
+      const seatLabels = booking.bookingSeats
+        .map((bs) => `${bs.seat.rowLabel}${bs.seat.seatNumber}`)
+        .filter(Boolean);
+
+      const ticketUrl = getClientTicketUrl(booking.id);
+
+      await this.emailService.sendBookingTicketEmail({
+        to: booking.user.email,
+        name: booking.user.fullName || "Quý khách",
+        bookingCode: booking.bookingCode,
+        bookingId: booking.id,
+        movieTitle: booking.showtime.movie.title,
+        moviePosterUrl: booking.showtime.movie.posterUrl,
+        cinemaName: booking.showtime.room.cinema.name,
+        cinemaAddress: booking.showtime.room.cinema.address,
+        roomName: booking.showtime.room.name,
+        startTime: booking.showtime.startTime,
+        seatLabels,
+        totalAmount: booking.totalAmount,
+        ticketUrl,
+      });
+    } catch (error) {
+      console.error(`[PaymentService] Failed to send ticket confirmation email for booking ${bookingId}:`, error);
+    }
   }
 
   private parsePayDate(value: string): Date | undefined {
