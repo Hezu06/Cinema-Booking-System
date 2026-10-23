@@ -24,6 +24,9 @@ export class NodeMailerGateway implements EmailService {
                 port,
                 secure,
                 auth: { user, pass },
+                connectionTimeout: 5000,
+                greetingTimeout: 5000,
+                socketTimeout: 5000,
             });
             this.isConfigured = true;
         }
@@ -33,19 +36,6 @@ export class NodeMailerGateway implements EmailService {
         const user = process.env.SMTP_USER?.trim();
         const from = process.env.EMAIL_FROM || (user ? `"Sọt Phim Cinema" <${user}>` : '"Sọt Phim Cinema" <no-reply@sotphim.vn>');
         const subject = `[Sọt Phim] Mã xác thực tài khoản của bạn: ${otpCode}`;
-
-        if (!this.isConfigured || !this.transporter) {
-            // Development/Fallback mode: Output OTP code prominently in server logs
-            console.log("\n=======================================================");
-            console.log("📧 [EMAIL GATEWAY - DEV / SIMULATION MODE]");
-            console.log(`To: ${to} (${name})`);
-            console.log(`Subject: ${subject}`);
-            console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${otpCode}`);
-            console.log("Thời hạn hiệu lực: 15 phút");
-            console.log("Cấu hình SMTP_USER và SMTP_PASS trong file .env để gửi email thật qua SMTP.");
-            console.log("=======================================================\n");
-            return true;
-        }
 
         const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background-color: #101016; color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #282838;">
@@ -76,21 +66,91 @@ export class NodeMailerGateway implements EmailService {
         </div>
         `;
 
-        try {
-            await this.transporter.sendMail({
-                from,
-                to,
-                subject,
-                text: `Xin chào ${name},\nMã xác thực tài khoản Sọt Phim của bạn là: ${otpCode} (hiệu lực 15 phút).\nVui lòng không chia sẻ mã này cho bất kỳ ai.`,
-                html,
-            });
-            console.log(`✅ Verification email successfully sent via SMTP to: ${to}`);
-            return true;
-        } catch (error) {
-            console.error("❌ Failed to send verification email via SMTP:", error instanceof Error ? error.message : error);
-            console.log(`🔑 [FALLBACK LOG] Mã OTP cho ${to}: ${otpCode}`);
-            return false;
+        // 1. Check HTTP-based Email APIs first (Render Free blocks SMTP ports 25, 465, 587, but allows HTTPS port 443)
+        const resendApiKey = process.env.RESEND_API_KEY?.trim();
+        if (resendApiKey) {
+            try {
+                const res = await fetch("https://api.resend.com/emails", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${resendApiKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        from: process.env.RESEND_FROM || "Sọt Phim Cinema <onboarding@resend.dev>",
+                        to: [to],
+                        subject,
+                        html,
+                    }),
+                });
+                if (res.ok) {
+                    console.log(`✅ Verification email successfully sent via Resend API (HTTPS) to: ${to}`);
+                    return true;
+                }
+                const errData = await res.json().catch(() => ({}));
+                console.error("❌ Resend API error:", errData);
+            } catch (err) {
+                console.error("❌ Failed to send via Resend API:", err);
+            }
         }
+
+        const brevoApiKey = process.env.BREVO_API_KEY?.trim();
+        if (brevoApiKey) {
+            try {
+                const senderEmail = process.env.BREVO_SENDER || user || "hyo.trng@gmail.com";
+                const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+                    method: "POST",
+                    headers: {
+                        "api-key": brevoApiKey,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    body: JSON.stringify({
+                        sender: { name: "Sọt Phim Cinema", email: senderEmail },
+                        to: [{ email: to, name }],
+                        subject,
+                        htmlContent: html,
+                    }),
+                });
+                if (res.ok) {
+                    console.log(`✅ Verification email successfully sent via Brevo API (HTTPS) to: ${to}`);
+                    return true;
+                }
+                const errData = await res.json().catch(() => ({}));
+                console.error("❌ Brevo API error:", errData);
+            } catch (err) {
+                console.error("❌ Failed to send via Brevo API:", err);
+            }
+        }
+
+        // 2. Fallback to NodeMailer SMTP if configured
+        if (this.isConfigured && this.transporter) {
+            try {
+                await this.transporter.sendMail({
+                    from,
+                    to,
+                    subject,
+                    text: `Xin chào ${name},\nMã xác thực tài khoản Sọt Phim của bạn là: ${otpCode} (hiệu lực 15 phút).\nVui lòng không chia sẻ mã này cho bất kỳ ai.`,
+                    html,
+                });
+                console.log(`✅ Verification email successfully sent via SMTP to: ${to}`);
+                return true;
+            } catch (error) {
+                console.error("❌ Failed to send verification email via SMTP:", error instanceof Error ? error.message : error);
+                console.log(`🔑 [FALLBACK LOG] Mã OTP cho ${to}: ${otpCode}`);
+                return false;
+            }
+        }
+
+        // 3. Fallback / Dev Mode
+        console.log("\n=======================================================");
+        console.log("📧 [EMAIL GATEWAY - DEV / SIMULATION MODE]");
+        console.log(`To: ${to} (${name})`);
+        console.log(`Subject: ${subject}`);
+        console.log(`🔑 MÃ XÁC THỰC (OTP CODE): ${otpCode}`);
+        console.log("Thời hạn hiệu lực: 15 phút");
+        console.log("=======================================================\n");
+        return true;
     }
 }
 
