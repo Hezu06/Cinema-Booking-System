@@ -12,7 +12,6 @@ import { SeatSelectionPage } from './pages/SeatSelectionPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { TicketSuccessPage } from './pages/TicketSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { MyBookingsPage } from './pages/MyBookingsPage';
 import { PaymentResultPage } from './pages/PaymentResultPage';
 import { AdminRoute } from './components/auth/AdminRoute';
 import { AdminPage } from './pages/AdminPage';
