@@ -385,27 +385,74 @@ export class PrismaBookingRepository implements BookingRepository {
   }
 
   async releaseSeats(data: ReleaseSeatsData): Promise<number> {
-    const result = await prisma.showtimeSeat.updateMany({
-      where: {
-        showtimeId: data.showtimeId,
-        heldByUserId: data.userId,
-        status: "HELD",
-        ...(data.showtimeSeatIds && data.showtimeSeatIds.length > 0
-          ? {
-              OR: [
-                { id: { in: data.showtimeSeatIds } },
-                { seatId: { in: data.showtimeSeatIds } },
-              ],
-            }
-          : {}),
-      },
-      data: {
-        status: "AVAILABLE",
-        heldByUserId: null,
-        holdExpiresAt: null,
-      },
-    });
-    return result.count;
+    return prisma.$transaction(async (tx) => {
+      const heldSeats = await tx.showtimeSeat.findMany({
+        where: {
+          showtimeId: data.showtimeId,
+          heldByUserId: data.userId,
+          status: "HELD",
+          ...(data.showtimeSeatIds && data.showtimeSeatIds.length > 0
+            ? {
+                OR: [
+                  { id: { in: data.showtimeSeatIds } },
+                  { seatId: { in: data.showtimeSeatIds } },
+                ],
+              }
+            : {}),
+        },
+        select: { id: true },
+      });
+
+      if (heldSeats.length === 0) return 0;
+      const selectedIds = heldSeats.map((seat) => seat.id);
+
+      // A checkout may already have created a PENDING booking for this hold.
+      // Releasing any seat from it means cancelling the whole pending order,
+      // otherwise My Tickets would keep showing an order that can no longer be paid.
+      const pendingBookings = await tx.booking.findMany({
+        where: {
+          userId: data.userId,
+          showtimeId: data.showtimeId,
+          status: "PENDING",
+          bookingSeats: { some: { showtimeSeatId: { in: selectedIds } } },
+        },
+        select: {
+          id: true,
+          bookingSeats: { select: { showtimeSeatId: true } },
+        },
+      });
+
+      const pendingBookingIds = pendingBookings.map((booking) => booking.id);
+      if (pendingBookingIds.length > 0) {
+        await tx.booking.updateMany({
+          where: { id: { in: pendingBookingIds }, status: "PENDING" },
+          data: { status: "CANCELLED" },
+        });
+        await tx.payment.updateMany({
+          where: { bookingId: { in: pendingBookingIds }, status: "PENDING" },
+          data: { status: "EXPIRED" },
+        });
+      }
+
+      const seatIdsToRelease = Array.from(new Set([
+        ...selectedIds,
+        ...pendingBookings.flatMap((booking) =>
+          booking.bookingSeats.map((seat) => seat.showtimeSeatId)),
+      ]));
+      const result = await tx.showtimeSeat.updateMany({
+        where: {
+          id: { in: seatIdsToRelease },
+          heldByUserId: data.userId,
+          status: "HELD",
+        },
+        data: {
+          status: "AVAILABLE",
+          heldByUserId: null,
+          holdExpiresAt: null,
+        },
+      });
+      return result.count;
+    }, { maxWait: 10_000, timeout: 25_000 });
   }
 
   async findById(id: string): Promise<BookingDetail | null> {
