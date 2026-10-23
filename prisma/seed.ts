@@ -22,6 +22,7 @@ async function main() {
       passwordHash: adminPasswordHash,
       role: "ADMIN" as const,
       status: "ACTIVE" as const,
+      isVerified: true,
     },
     {
       fullName: "Lê Hoàng Khách Hàng",
@@ -30,6 +31,7 @@ async function main() {
       passwordHash: userPasswordHash,
       role: "CUSTOMER" as const,
       status: "ACTIVE" as const,
+      isVerified: true,
     },
     {
       fullName: "Phạm Minh Khách Hàng",
@@ -38,6 +40,7 @@ async function main() {
       passwordHash: userPasswordHash,
       role: "CUSTOMER" as const,
       status: "ACTIVE" as const,
+      isVerified: true,
     },
   ];
 
@@ -48,6 +51,7 @@ async function main() {
         fullName: u.fullName,
         role: u.role,
         status: u.status,
+        isVerified: true,
       },
       create: u,
     });
