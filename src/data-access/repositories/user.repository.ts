@@ -39,6 +39,12 @@ export class PrismaUserRepository implements UserRepository {
         });
     }
 
+    async findWithPasswordById(id: string): Promise<User | null> {
+        return prisma.user.findUnique({
+            where: { id },
+        });
+    }
+
     async create(data: CreateUserData): Promise<SafeUser> {
         return prisma.user.create({
             data: {

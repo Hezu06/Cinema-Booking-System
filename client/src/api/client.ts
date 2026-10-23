@@ -76,6 +76,21 @@ export const api = {
       body: JSON.stringify({ idToken }),
     }),
   getMe: () => request('/auth/me'),
+  forgotPassword: (payload: { email: string }) =>
+    request<{ success: boolean; message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (payload: { email: string; code: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  changePassword: (payload: { currentPassword: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
 
   // Movies
   getMovies: (params?: { status?: string; search?: string }) => {

@@ -13,6 +13,8 @@ export const AuthModal: React.FC = () => {
     register,
     verifyEmail,
     resendVerification,
+    forgotPassword,
+    resetPassword,
     loginWithGoogle,
     unverifiedEmail,
   } = useAuth();
@@ -46,18 +48,17 @@ export const AuthModal: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Reset countdowns when entering verify mode
+  // Reset countdowns when entering verify or reset-password mode
   useEffect(() => {
-    if (authModalMode === 'verify') {
+    if (authModalMode === 'verify' || authModalMode === 'reset-password') {
       setExpiresCountdown(15 * 60);
       setResendCountdown(60);
-      setExpiresCountdown(15 * 60);
     }
   }, [authModalMode]);
 
   // Countdown timer for 15-minute OTP expiration
   useEffect(() => {
-    if (authModalMode !== 'verify' || expiresCountdown <= 0) return;
+    if ((authModalMode !== 'verify' && authModalMode !== 'reset-password') || expiresCountdown <= 0) return;
     const interval = setInterval(() => {
       setExpiresCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
@@ -99,8 +100,59 @@ export const AuthModal: React.FC = () => {
       return;
     }
 
+    if (authModalMode === 'forgot-password') {
+      if (!email.trim()) {
+        setError('Vui lòng nhập địa chỉ email của bạn.');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        const msg = await forgotPassword(email.trim());
+        setSuccessMessage(msg);
+        setResendCountdown(60);
+        setExpiresCountdown(15 * 60);
+      } catch (err: any) {
+        setError(err.message || 'Không thể gửi mã đặt lại mật khẩu.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    if (authModalMode === 'reset-password') {
+      if (otpCode.length !== 6) {
+        setError('Vui lòng nhập đủ 6 chữ số mã xác thực.');
+        return;
+      }
+      if (password.length < 8) {
+        setError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Mật khẩu xác nhận không khớp.');
+        return;
+      }
+      setIsSubmitting(true);
+      try {
+        const msg = await resetPassword({
+          email: targetEmail,
+          code: otpCode,
+          newPassword: password,
+        });
+        setSuccessMessage(msg);
+        setOtpCode('');
+        setPassword('');
+        setConfirmPassword('');
+      } catch (err: any) {
+        setError(err.message || 'Đặt lại mật khẩu thất bại.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (authModalMode === 'register' && password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Mật khẩu xác nhận không khớp.');
       return;
     }
 
@@ -112,10 +164,10 @@ export const AuthModal: React.FC = () => {
       } else {
         await register({ fullName, email, phone: phone || '0900000000', password });
         setResendCountdown(60);
-      setExpiresCountdown(15 * 60);
+        setExpiresCountdown(15 * 60);
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication error. Please try again.');
+      setError(err.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -128,6 +180,23 @@ export const AuthModal: React.FC = () => {
     setIsResending(true);
     try {
       const msg = await resendVerification(targetEmail);
+      setSuccessMessage(msg);
+      setResendCountdown(60);
+      setExpiresCountdown(15 * 60);
+    } catch (err: any) {
+      setError(err.message || 'Không thể gửi lại mã xác thực.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleResendResetCode = async () => {
+    if ((resendCountdown > 0 && expiresCountdown > 0) || isResending) return;
+    setError(null);
+    setSuccessMessage(null);
+    setIsResending(true);
+    try {
+      const msg = await forgotPassword(targetEmail);
       setSuccessMessage(msg);
       setResendCountdown(60);
       setExpiresCountdown(15 * 60);
@@ -215,6 +284,10 @@ export const AuthModal: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-black text-white">
                 {authModalMode === 'verify'
                   ? 'Verify Your Email'
+                  : authModalMode === 'forgot-password'
+                  ? 'Quên mật khẩu'
+                  : authModalMode === 'reset-password'
+                  ? 'Đặt lại mật khẩu'
                   : authModalMode === 'login'
                   ? 'Sign In'
                   : 'Create Your Account'}
@@ -222,6 +295,10 @@ export const AuthModal: React.FC = () => {
               <p className="text-xs text-[#8E8E9E] mt-1">
                 {authModalMode === 'verify'
                   ? `Nhập mã xác thực 6 số gửi tới ${targetEmail}`
+                  : authModalMode === 'forgot-password'
+                  ? 'Nhập địa chỉ email của bạn để nhận mã xác thực đặt lại mật khẩu'
+                  : authModalMode === 'reset-password'
+                  ? `Nhập mã 6 chữ số gửi tới ${targetEmail} và mật khẩu mới`
                   : authModalMode === 'login'
                   ? 'Welcome back! Please enter your details'
                   : 'Start your cinematic journey with Sọt phim'}
@@ -266,8 +343,8 @@ export const AuthModal: React.FC = () => {
               </div>
             )}
 
-            {authModalMode === 'verify' ? (
-              /* OTP VERIFICATION FORM */
+            {/* A. OTP VERIFICATION FORM (AFTER REGISTER) */}
+            {authModalMode === 'verify' && (
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                 <div>
                   <div className="flex items-center justify-between mb-2 px-1">
@@ -334,19 +411,145 @@ export const AuthModal: React.FC = () => {
                   </button>
                 </div>
               </form>
-            ) : (
-              /* LOGIN & REGISTER FORM */
+            )}
+
+            {/* B. FORGOT PASSWORD FORM (REQUEST OTP) */}
+            {authModalMode === 'forgot-password' && (
+              <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-[11px] text-[#8E8E9E] mb-1">Email tài khoản</label>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="L.caldwell@gmail.com"
+                    className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                  />
+                  <p className="text-[11px] text-[#656578] mt-1.5">
+                    Hệ thống sẽ gửi mã xác thực 6 chữ số đến email này để xác nhận yêu cầu đặt lại mật khẩu.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !email.trim()}
+                  className="w-full py-3 rounded-xl bg-[#FCFC65] hover:bg-[#EAEA48] disabled:opacity-50 text-[#08080C] font-bold text-xs shadow-neon transition cursor-pointer"
+                >
+                  {isSubmitting ? 'Đang gửi mã...' : 'Gửi mã xác thực'}
+                </button>
+              </form>
+            )}
+
+            {/* C. RESET PASSWORD FORM (INPUT OTP + NEW PASSWORD) */}
+            {authModalMode === 'reset-password' && (
+              <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-1 px-1">
+                    <label className="text-[11px] text-[#8E8E9E]">Mã xác thực (OTP Code)</label>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <Clock size={12} className={expiresCountdown > 60 ? "text-[#FCFC65]" : "text-red-400 animate-pulse"} />
+                      <span className={`font-mono font-bold ${expiresCountdown > 60 ? "text-[#FCFC65]" : "text-red-400"}`}>
+                        {formatTime(expiresCountdown)}
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    autoFocus
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2 text-center text-xl font-bold font-mono tracking-[0.3em] text-[#FCFC65] placeholder-[#404050] focus:outline-none focus:border-[#FCFC65]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-[#8E8E9E] mb-1">Mật khẩu mới</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Tối thiểu 8 ký tự"
+                      className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-[#8E8E9E] mb-1">Xác nhận mật khẩu mới</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Nhập lại mật khẩu mới"
+                      className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 pr-10 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8E8E9E] hover:text-white transition focus:outline-none"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Resend Reset Code Link */}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={handleResendResetCode}
+                    disabled={isResending || isSubmitting || (resendCountdown > 0 && expiresCountdown > 0)}
+                    className="text-[11px] text-[#8E8E9E] hover:text-[#FCFC65] disabled:opacity-50 transition cursor-pointer"
+                  >
+                    {isResending ? (
+                      'Đang gửi lại...'
+                    ) : resendCountdown > 0 && expiresCountdown > 0 ? (
+                      `Gửi lại mã sau ${resendCountdown}s`
+                    ) : (
+                      'Gửi lại mã xác thực'
+                    )}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || otpCode.length !== 6 || password.length < 8 || password !== confirmPassword}
+                  className="w-full py-3 rounded-xl bg-[#FCFC65] hover:bg-[#EAEA48] disabled:opacity-50 text-[#08080C] font-bold text-xs shadow-neon transition cursor-pointer mt-1"
+                >
+                  {isSubmitting ? 'Đang cập nhật mật khẩu...' : 'Đặt lại mật khẩu'}
+                </button>
+              </form>
+            )}
+
+            {/* D. LOGIN & REGISTER FORMS */}
+            {(authModalMode === 'login' || authModalMode === 'register') && (
               <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
                 {authModalMode === 'register' && (
                   <>
                     <div>
-                      <label className="block text-[11px] text-[#8E8E9E] mb-1">Username / Full Name</label>
+                      <label className="block text-[11px] text-[#8E8E9E] mb-1">Full Name</label>
                       <input
                         type="text"
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Luna Caldwell"
+                        placeholder="Lewis Caldwell"
                         className="w-full bg-[#181824] border border-[#282838] rounded-xl px-3.5 py-2.5 text-white placeholder-[#505064] focus:outline-none focus:border-[#FCFC65]"
                       />
                     </div>
@@ -435,7 +638,15 @@ export const AuthModal: React.FC = () => {
                   </label>
 
                   {authModalMode === 'login' && (
-                    <button type="button" className="text-[#8E8E9E] hover:text-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setError(null);
+                        setSuccessMessage(null);
+                        openAuthModal('forgot-password', email);
+                      }}
+                      className="text-[#8E8E9E] hover:text-[#FCFC65] transition cursor-pointer"
+                    >
                       Forgot your password?
                     </button>
                   )}
@@ -456,9 +667,9 @@ export const AuthModal: React.FC = () => {
               </form>
             )}
 
-            {authModalMode !== 'verify' && (
+            {/* Google OAuth Button: Show only in login & register modes */}
+            {(authModalMode === 'login' || authModalMode === 'register') && (
               <>
-                {/* Divider OR */}
                 <div className="relative text-center my-3">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-[#20202E]" />
@@ -468,7 +679,6 @@ export const AuthModal: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Google OAuth Button */}
                 <button
                   type="button"
                   onClick={handleGoogleClick}
@@ -520,6 +730,21 @@ export const AuthModal: React.FC = () => {
                   className="text-white hover:text-[#FCFC65] font-semibold underline cursor-pointer"
                 >
                   Quay lại đăng nhập
+                </button>
+              </>
+            ) : authModalMode === 'forgot-password' || authModalMode === 'reset-password' ? (
+              <>
+                Đã nhớ mật khẩu?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setSuccessMessage(null);
+                    openAuthModal('login');
+                  }}
+                  className="text-white hover:text-[#FCFC65] font-semibold underline cursor-pointer"
+                >
+                  Quay lại Đăng nhập
                 </button>
               </>
             ) : authModalMode === 'login' ? (

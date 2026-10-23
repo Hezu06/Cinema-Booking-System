@@ -41,3 +41,27 @@ export const resendVerificationSchema = z.object({
 });
 
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+
+export const forgotPasswordSchema = z.object({
+    email: z.string().trim().toLowerCase().email("Email không hợp lệ"),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+    email: z.string().trim().toLowerCase().email("Email không hợp lệ"),
+    code: z
+        .string()
+        .trim()
+        .regex(/^\d{6}$/, "Mã xác thực phải gồm đúng 6 chữ số"),
+    newPassword: z.string().min(8, "Mật khẩu mới phải có ít nhất 8 ký tự"),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Vui lòng nhập mật khẩu hiện tại"),
+    newPassword: z.string().min(8, "Mật khẩu mới phải có ít nhất 8 ký tự"),
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

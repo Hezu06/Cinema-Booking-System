@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
 import { api, getAuthToken, setAuthToken } from '../api/client';
 
+export type AuthModalMode = 'login' | 'register' | 'verify' | 'forgot-password' | 'reset-password';
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -10,12 +12,15 @@ interface AuthContextType {
   register: (payload: { fullName: string; email: string; phone: string; password: string }) => Promise<{ requireVerification?: boolean }>;
   verifyEmail: (payload: { email: string; code: string }) => Promise<void>;
   resendVerification: (email: string, force?: boolean) => Promise<string>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (payload: { email: string; code: string; newPassword: string }) => Promise<string>;
+  changePassword: (payload: { currentPassword: string; newPassword: string }) => Promise<string>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
-  openAuthModal: (mode?: 'login' | 'register' | 'verify', pendingEmail?: string) => void;
+  openAuthModal: (mode?: AuthModalMode, pendingEmail?: string) => void;
   closeAuthModal: () => void;
   isAuthModalOpen: boolean;
-  authModalMode: 'login' | 'register' | 'verify';
+  authModalMode: AuthModalMode;
   unverifiedEmail: string;
   setUnverifiedEmail: (email: string) => void;
 }
@@ -26,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'verify'>('login');
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
 
   useEffect(() => {
@@ -97,6 +102,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res.message || 'Mã xác thực mới đã được gửi tới email của bạn';
   };
 
+  const forgotPassword = async (email: string) => {
+    const res = await api.forgotPassword({ email });
+    if (!res.success) {
+      throw new Error(res.message || 'Không thể gửi mã đặt lại mật khẩu');
+    }
+    setUnverifiedEmail(email);
+    setAuthModalMode('reset-password');
+    return res.message || 'Mã xác thực đã được gửi tới email của bạn';
+  };
+
+  const resetPassword = async (payload: { email: string; code: string; newPassword: string }) => {
+    const res = await api.resetPassword(payload);
+    if (!res.success) {
+      throw new Error(res.message || 'Không thể đặt lại mật khẩu');
+    }
+    setAuthModalMode('login');
+    return res.message || 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới';
+  };
+
+  const changePassword = async (payload: { currentPassword: string; newPassword: string }) => {
+    const res = await api.changePassword(payload);
+    if (!res.success) {
+      throw new Error(res.message || 'Đổi mật khẩu thất bại');
+    }
+    return res.message || 'Đổi mật khẩu thành công';
+  };
+
   const loginWithGoogle = async (idToken: string) => {
     const res = await api.googleLogin(idToken);
     if (!res.success || !res.data) {
@@ -112,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const openAuthModal = (mode: 'login' | 'register' | 'verify' = 'login', pendingEmail?: string) => {
+  const openAuthModal = (mode: AuthModalMode = 'login', pendingEmail?: string) => {
     setAuthModalMode(mode);
     if (pendingEmail) {
       setUnverifiedEmail(pendingEmail);
@@ -134,6 +166,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         verifyEmail,
         resendVerification,
+        forgotPassword,
+        resetPassword,
+        changePassword,
         loginWithGoogle,
         logout,
         openAuthModal,
