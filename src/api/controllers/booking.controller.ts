@@ -111,6 +111,36 @@ function handleBookingError(error: unknown, response: Response): boolean {
       response.status(409).json({ success: false, message: "Booking này đã được hoàn tiền" });
       return true;
 
+    case "BOOKING_NOT_FOUND":
+      response.status(404).json({
+        success: false,
+        message: "Đơn đặt vé không tồn tại trong hệ thống",
+      });
+      return true;
+
+    case "BOOKING_NOT_CONFIRMED":
+      response.status(400).json({
+        success: false,
+        message: "Đơn đặt vé chưa hoàn tất thanh toán hoặc đã bị hủy",
+      });
+      return true;
+
+    case "NO_USER_EMAIL":
+      response.status(400).json({
+        success: false,
+        message: "Tài khoản không có địa chỉ email hợp lệ để nhận vé",
+      });
+      return true;
+
+    case "EMAIL_SERVICE_NOT_AVAILABLE":
+      response.status(503).json({
+        success: false,
+        message: "Dịch vụ gửi email hiện không khả dụng",
+      });
+      return true;
+      response.status(409).json({ success: false, message: "Booking này đã được hoàn tiền" });
+      return true;
+
     case "FORBIDDEN":
       response.status(403).json({
         success: false,
@@ -353,6 +383,39 @@ export class BookingController {
       });
     } catch (error) {
       console.error("Error fetching all bookings:", error);
+      return response.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  };
+
+  resendBookingEmail = async (request: Request, response: Response) => {
+    const paramResult = bookingIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      return response.status(400).json({
+        success: false,
+        message: "Mã đơn đặt vé không hợp lệ",
+        errors: paramResult.error.issues,
+      });
+    }
+
+    const user = (request as AuthenticatedRequest).user;
+
+    try {
+      const result = await this.bookingService.resendBookingTicketEmail(
+        paramResult.data.id,
+        user,
+      );
+
+      return response.status(200).json({
+        success: result.success,
+        message: result.message,
+      });
+    } catch (error) {
+      if (handleBookingError(error, response)) return;
+
+      console.error("Error resending booking email:", error);
       return response.status(500).json({
         success: false,
         message: "Internal server error",

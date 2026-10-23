@@ -6,7 +6,9 @@ import type {
   HoldSeatsResult,
   ReleaseSeatsData,
 } from "../interfaces/booking.interface.js";
+import type { EmailService } from "../interfaces/email.interface.js";
 import type { BookingDetail } from "../models/booking.model.js";
+import { getClientTicketUrl } from "../utils/client-url.util.js";
 
 function generateBookingCode(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -15,7 +17,10 @@ function generateBookingCode(): string {
 }
 
 export class BookingService {
-  constructor(private readonly bookingRepository: BookingRepository) {}
+  constructor(
+    private readonly bookingRepository: BookingRepository,
+    private readonly emailService?: EmailService,
+  ) {}
 
   async holdSeats(
     userId: string,
@@ -129,5 +134,58 @@ export class BookingService {
 
   async getAllBookings(filters?: BookingFilters): Promise<BookingDetail[]> {
     return this.bookingRepository.findAll(filters);
+  }
+
+  async resendBookingTicketEmail(
+    id: string,
+    user: { userId: string; role: string },
+  ): Promise<{ success: boolean; message: string }> {
+    const booking = await this.bookingRepository.findById(id);
+    if (!booking) throw new Error("BOOKING_NOT_FOUND");
+
+    if (user.role !== "ADMIN" && booking.userId !== user.userId) {
+      throw new Error("FORBIDDEN");
+    }
+
+    if (booking.status !== "CONFIRMED") {
+      throw new Error("BOOKING_NOT_CONFIRMED");
+    }
+
+    if (!booking.user?.email) {
+      throw new Error("NO_USER_EMAIL");
+    }
+
+    if (!this.emailService) {
+      throw new Error("EMAIL_SERVICE_NOT_AVAILABLE");
+    }
+
+    const seatLabels = booking.bookingSeats
+      .map((bs) => `${bs.seat.rowLabel}${bs.seat.seatNumber}`)
+      .filter(Boolean);
+
+    const ticketUrl = getClientTicketUrl(booking.id);
+
+    const sent = await this.emailService.sendBookingTicketEmail({
+      to: booking.user.email,
+      name: booking.user.fullName || "Quý khách",
+      bookingCode: booking.bookingCode,
+      bookingId: booking.id,
+      movieTitle: booking.showtime.movie.title,
+      moviePosterUrl: booking.showtime.movie.posterUrl,
+      cinemaName: booking.showtime.room.cinema.name,
+      cinemaAddress: booking.showtime.room.cinema.address,
+      roomName: booking.showtime.room.name,
+      startTime: booking.showtime.startTime,
+      seatLabels,
+      totalAmount: booking.totalAmount,
+      ticketUrl,
+    });
+
+    return {
+      success: sent,
+      message: sent
+        ? `Vé xem phim đã được gửi tới email ${booking.user.email}`
+        : "Không thể gửi email lúc này. Vui lòng thử lại sau ít phút.",
+    };
   }
 }

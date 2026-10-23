@@ -582,3 +582,6 @@ export class PrismaBookingRepository implements BookingRepository {
     return raw ? mapBookingDetail(raw) : null;
   }
 }
+
+
+export const bookingRepository = new PrismaBookingRepository();

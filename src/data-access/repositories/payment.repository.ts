@@ -82,7 +82,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
       });
       if (!payment) return { rspCode: "01", message: "Order not found" };
       if (Number(payment.amount) !== data.amount) return { rspCode: "04", message: "Invalid amount" };
-      if (payment.status !== "PENDING") return { rspCode: "02", message: "Order already confirmed", payment: mapPayment(payment) };
+      if (payment.status !== "PENDING") return { rspCode: "02", message: "Order already confirmed", payment: mapPayment(payment), newlyConfirmed: false };
 
       const success = data.responseCode === "00" && data.transactionStatus === "00";
       const gatewayData = {
@@ -199,7 +199,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
 
       const updated = await tx.payment.findUnique({ where: { id: payment.id }, include: paymentInclude });
       if (!updated) return { rspCode: "01", message: "Order not found" };
-      return { rspCode: "00", message: "Confirm success", payment: mapPayment(updated) };
+      return { rspCode: "00", message: "Confirm success", payment: mapPayment(updated), newlyConfirmed: true };
     }, { maxWait: 10_000, timeout: 30_000 });
   }
 }
