@@ -12,7 +12,7 @@ import type {
     GoogleOAuthVerifier,
 } from "../interfaces/auth.interface.js";
 import type { EmailService } from "../interfaces/email.interface.js";
-import { AuthProvider, type SafeUser, type User } from "../models/user.model.js";
+import { AuthProvider, UserRole, type SafeUser, type User } from "../models/user.model.js";
 
 export class AuthService {
     constructor(
@@ -97,7 +97,12 @@ export class AuthService {
         }
 
         if (user.provider === AuthProvider.LOCAL && !user.isVerified) {
-            throw new Error("Tài khoản chưa được kích hoạt. Vui lòng xác thực email của bạn");
+            if (user.role === UserRole.ADMIN) {
+                await this.userRepository.update(user.id, { isVerified: true });
+                user.isVerified = true;
+            } else {
+                throw new Error("Tài khoản chưa được kích hoạt. Vui lòng xác thực email của bạn");
+            }
         }
 
         return this.generateAuthResult(user);
