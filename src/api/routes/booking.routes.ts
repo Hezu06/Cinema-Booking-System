@@ -5,6 +5,15 @@ import { PrismaBookingRepository } from "../../data-access/repositories/booking.
 import { emailService } from "../../data-access/gateways/email.gateway.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireAdmin } from "../middlewares/role.middleware.js";
+import { validateRequest } from "../middlewares/validate.middleware.js";
+import {
+  bookingIdParamSchema,
+  bookingQuerySchema,
+  cancelBookingSchema,
+  createBookingSchema,
+  holdSeatsSchema,
+  releaseSeatsSchema,
+} from "../validators/booking.validator.js";
 
 const bookingRouter = express.Router();
 const bookingRepository = new PrismaBookingRepository();
@@ -15,15 +24,23 @@ const bookingController = new BookingController(bookingService);
 bookingRouter.use(authMiddleware);
 
 // Customer & Admin endpoints
-bookingRouter.post("/hold", bookingController.holdSeats);
-bookingRouter.post("/release", bookingController.releaseSeats);
-bookingRouter.post("/", bookingController.createBooking);
+bookingRouter.post("/hold", validateRequest({ body: holdSeatsSchema }), bookingController.holdSeats);
+bookingRouter.post("/release", validateRequest({ body: releaseSeatsSchema }), bookingController.releaseSeats);
+bookingRouter.post("/", validateRequest({ body: createBookingSchema }), bookingController.createBooking);
 bookingRouter.get("/my-bookings", bookingController.getMyBookings);
-bookingRouter.get("/:id", bookingController.getBookingById);
-bookingRouter.post("/:id/cancel", bookingController.cancelBooking);
-bookingRouter.post("/:id/resend-email", bookingController.resendBookingEmail);
+bookingRouter.get("/:id", validateRequest({ params: bookingIdParamSchema }), bookingController.getBookingById);
+bookingRouter.post(
+  "/:id/cancel",
+  validateRequest({ params: bookingIdParamSchema, body: cancelBookingSchema }),
+  bookingController.cancelBooking,
+);
+bookingRouter.post(
+  "/:id/resend-email",
+  validateRequest({ params: bookingIdParamSchema }),
+  bookingController.resendBookingEmail,
+);
 
 // Admin-only: list all bookings across all users
-bookingRouter.get("/", requireAdmin, bookingController.getAllBookings);
+bookingRouter.get("/", requireAdmin, validateRequest({ query: bookingQuerySchema }), bookingController.getAllBookings);
 
 export default bookingRouter;

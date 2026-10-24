@@ -1,30 +1,21 @@
 import type { Request, Response } from "express";
 import type { BookingService } from "../../business/services/booking.service.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
-import {
-  bookingIdParamSchema,
-  bookingQuerySchema,
-  cancelBookingSchema,
-  createBookingSchema,
-  holdSeatsSchema,
-  releaseSeatsSchema,
+import type {
+  BookingQueryInput,
+  CreateBookingInput,
 } from "../validators/booking.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
+import { NotFoundError } from "../../shared/errors/index.js";
 
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   holdSeats = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
-    const bodyResult = holdSeatsSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
     const result = await this.bookingService.holdSeats(
       user.userId,
-      bodyResult.data,
+      request.body,
     );
 
     return response.status(200).json({
@@ -36,14 +27,9 @@ export class BookingController {
 
   releaseSeats = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
-    const bodyResult = releaseSeatsSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
     const result = await this.bookingService.releaseSeats(
       user.userId,
-      bodyResult.data,
+      request.body,
     );
 
     return response.status(200).json({
@@ -55,14 +41,9 @@ export class BookingController {
 
   createBooking = asyncHandler(async (request: Request, response: Response) => {
     const user = (request as AuthenticatedRequest).user;
-    const bodyResult = createBookingSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
     const booking = await this.bookingService.createBooking(
       user.userId,
-      bodyResult.data,
+      request.body as CreateBookingInput,
     );
 
     return response.status(201).json({
@@ -83,15 +64,10 @@ export class BookingController {
     });
   });
 
-  getBookingById = asyncHandler(async (request: Request, response: Response) => {
-    const user = (request as AuthenticatedRequest).user;
-    const paramResult = bookingIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid booking ID", paramResult.error.issues);
-    }
-
+  getBookingById = asyncHandler(async (request: AuthenticatedRequest<{ id: string }>, response: Response) => {
+    const user = request.user;
     const booking = await this.bookingService.getBookingById(
-      paramResult.data.id,
+      request.params.id,
       user,
     );
 
@@ -106,21 +82,12 @@ export class BookingController {
     });
   });
 
-  cancelBooking = asyncHandler(async (request: Request, response: Response) => {
-    const user = (request as AuthenticatedRequest).user;
-    const paramResult = bookingIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid booking ID", paramResult.error.issues);
-    }
-    const bodyResult = cancelBookingSchema.safeParse(request.body ?? {});
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
+  cancelBooking = asyncHandler(async (request: AuthenticatedRequest<{ id: string }>, response: Response) => {
+    const user = request.user;
     const booking = await this.bookingService.cancelBooking(
-      paramResult.data.id,
+      request.params.id,
       user,
-      bodyResult.data.reason,
+      request.body?.reason,
     );
 
     if (!booking) {
@@ -135,12 +102,7 @@ export class BookingController {
   });
 
   getAllBookings = asyncHandler(async (request: Request, response: Response) => {
-    const queryResult = bookingQuerySchema.safeParse(request.query);
-    if (!queryResult.success) {
-      throw new ValidationError("Invalid query parameters", queryResult.error.issues);
-    }
-
-    const bookings = await this.bookingService.getAllBookings(queryResult.data);
+    const bookings = await this.bookingService.getAllBookings(request.query as BookingQueryInput);
 
     return response.status(200).json({
       success: true,
@@ -149,16 +111,10 @@ export class BookingController {
     });
   });
 
-  resendBookingEmail = asyncHandler(async (request: Request, response: Response) => {
-    const paramResult = bookingIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Mã đơn đặt vé không hợp lệ", paramResult.error.issues);
-    }
-
-    const user = (request as AuthenticatedRequest).user;
-
+  resendBookingEmail = asyncHandler(async (request: AuthenticatedRequest<{ id: string }>, response: Response) => {
+    const user = request.user;
     const result = await this.bookingService.resendBookingTicketEmail(
-      paramResult.data.id,
+      request.params.id,
       user,
     );
 

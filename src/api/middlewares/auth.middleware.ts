@@ -3,7 +3,12 @@ import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { UserRole } from "../../business/models/user.model.js";
 import { userRepository } from "../../data-access/repositories/user.repository.js";
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<
+    P = any,
+    ResBody = any,
+    ReqBody = any,
+    ReqQuery = any,
+> extends Request<P, ResBody, ReqBody, ReqQuery> {
     user: {
         userId: string;
         role: UserRole;

@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
-import {
-    loginSchema,
-    registerSchema,
-    googleAuthSchema,
-    verifyEmailSchema,
-    resendVerificationSchema,
-    forgotPasswordSchema,
-    resetPasswordSchema,
-    changePasswordSchema,
+import type {
+    ChangePasswordInput,
+    ForgotPasswordInput,
+    GoogleAuthInput,
+    LoginInput,
+    RegisterInput,
+    ResendVerificationInput,
+    ResetPasswordInput,
+    VerifyEmailInput,
 } from "../validators/auth.validator.js";
 import { AuthService } from "../../business/services/auth.service.js";
 import { userRepository } from "../../data-access/repositories/user.repository.js";
@@ -15,12 +15,12 @@ import { emailService } from "../../data-access/gateways/email.gateway.js";
 import { googleOAuthGateway } from "../../data-access/gateways/google-oauth.gateway.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { UnauthorizedError } from "../../shared/errors/index.js";
+import { NotFoundError, UnauthorizedError } from "../../shared/errors/index.js";
 
 const authService = new AuthService(userRepository, emailService, googleOAuthGateway);
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-    const input = registerSchema.parse(req.body);
+    const input = req.body as RegisterInput;
     const user = await authService.register(input);
 
     return res.status(201).json({
@@ -34,7 +34,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
-    const input = loginSchema.parse(req.body);
+    const input = req.body as LoginInput;
     const result = await authService.login(input.email, input.password);
 
     return res.status(200).json({
@@ -44,7 +44,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
-    const input = googleAuthSchema.parse(req.body);
+    const input = req.body as GoogleAuthInput;
     const result = await authService.loginWithGoogle(input.idToken);
 
     return res.status(200).json({
@@ -58,10 +58,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
     const user = await authService.getProfile(authenticatedRequest.user.userId);
 
     if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: "Không tìm thấy người dùng",
-        });
+        throw new NotFoundError("Không tìm thấy người dùng");
     }
 
     return res.status(200).json({
@@ -71,7 +68,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-    const input = verifyEmailSchema.parse(req.body);
+    const input = req.body as VerifyEmailInput;
     const result = await authService.verifyEmail(input);
 
     return res.status(200).json({
@@ -82,7 +79,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const resendVerification = asyncHandler(async (req: Request, res: Response) => {
-    const input = resendVerificationSchema.parse(req.body);
+    const input = req.body as ResendVerificationInput;
     await authService.resendVerificationCode(input.email, input.force);
 
     return res.status(200).json({
@@ -92,7 +89,7 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
 });
 
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
-    const input = forgotPasswordSchema.parse(req.body);
+    const input = req.body as ForgotPasswordInput;
     await authService.forgotPassword(input);
 
     return res.status(200).json({
@@ -102,7 +99,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const input = resetPasswordSchema.parse(req.body);
+    const input = req.body as ResetPasswordInput;
     await authService.resetPassword(input);
 
     return res.status(200).json({
@@ -112,7 +109,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
-    const input = changePasswordSchema.parse(req.body);
+    const input = req.body as ChangePasswordInput;
     const authenticatedRequest = req as AuthenticatedRequest;
     const userId = authenticatedRequest.user?.userId;
 
