@@ -1,12 +1,7 @@
 import type { Request, Response } from "express";
 import type { PaymentService } from "../../business/services/payment.service.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
-import {
-  createVnpayPaymentSchema,
-  paymentBookingParamSchema,
-} from "../validators/payment.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { ValidationError } from "../../shared/errors/index.js";
 
 function queryToStrings(query: Request["query"]): Record<string, string> {
   const entries = Object.entries(query)
@@ -19,30 +14,22 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   createVnpayPayment = asyncHandler(async (request: Request, response: Response) => {
-    const body = createVnpayPaymentSchema.safeParse(request.body);
-    if (!body.success) {
-      throw new ValidationError("Validation failed", body.error.issues);
-    }
     const user = (request as AuthenticatedRequest).user;
     const forwarded = request.header("x-forwarded-for")?.split(",")[0]?.trim();
     const ipAddress = forwarded || request.ip || request.socket.remoteAddress || "127.0.0.1";
 
     const data = await this.paymentService.createVnpayPayment(
       user.userId,
-      body.data.bookingId,
+      request.body.bookingId,
       ipAddress.replace(/^::ffff:/, ""),
-      body.data.bankCode,
+      request.body.bankCode,
     );
     return response.status(201).json({ success: true, message: "VNPAY payment URL created", data });
   });
 
-  getBookingPayments = asyncHandler(async (request: Request, response: Response) => {
-    const params = paymentBookingParamSchema.safeParse(request.params);
-    if (!params.success) {
-      throw new ValidationError("Invalid booking ID", params.error.issues);
-    }
-    const user = (request as AuthenticatedRequest).user;
-    const data = await this.paymentService.getBookingPayments(user.userId, user.role, params.data.bookingId);
+  getBookingPayments = asyncHandler(async (request: AuthenticatedRequest<{ bookingId: string }>, response: Response) => {
+    const user = request.user;
+    const data = await this.paymentService.getBookingPayments(user.userId, user.role, request.params.bookingId);
     return response.status(200).json({ success: true, message: "Get booking payments", data });
   });
 

@@ -20,6 +20,16 @@ import {
   requireAdmin,
 } from "../middlewares/role.middleware.js";
 
+import {
+  validateRequest,
+} from "../middlewares/validate.middleware.js";
+
+import {
+  createCinemaSchema,
+  updateCinemaSchema,
+  cinemaIdParamSchema,
+} from "../validators/cinema.validator.js";
+
 const cinemaRouter =
   express.Router();
 
@@ -49,6 +59,7 @@ cinemaRouter.get(
 
 cinemaRouter.get(
   "/:id",
+  validateRequest({ params: cinemaIdParamSchema }),
   cinemaController.getCinemaById
 );
 
@@ -56,6 +67,7 @@ cinemaRouter.post(
   "/",
   authMiddleware,
   requireAdmin,
+  validateRequest({ body: createCinemaSchema }),
   cinemaController.createCinema
 );
 
@@ -63,6 +75,7 @@ cinemaRouter.put(
   "/:id",
   authMiddleware,
   requireAdmin,
+  validateRequest({ params: cinemaIdParamSchema, body: updateCinemaSchema }),
   cinemaController.updateCinema
 );
 
@@ -70,6 +83,7 @@ cinemaRouter.delete(
   "/:id",
   authMiddleware,
   requireAdmin,
+  validateRequest({ params: cinemaIdParamSchema }),
   cinemaController.deleteCinema
 );
 

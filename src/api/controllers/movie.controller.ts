@@ -1,12 +1,8 @@
 import type { Request, Response } from "express";
 import { MovieService } from "../../business/services/movie.service.js";
-import {
-  createMovieSchema,
-  updateMovieSchema,
-  movieIdParamSchema,
-} from "../validators/movie.validator.js";
+import type { CreateMovieInput, UpdateMovieInput } from "../validators/movie.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
+import { NotFoundError } from "../../shared/errors/index.js";
 
 export class MovieController {
   constructor(private readonly movieService: MovieService) {}
@@ -22,12 +18,7 @@ export class MovieController {
   });
 
   getMovieById = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = movieIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid movie ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const movie = await this.movieService.getMovieById(id);
 
     if (!movie) {
@@ -42,12 +33,7 @@ export class MovieController {
   });
 
   createMovie = asyncHandler(async (request: Request, response: Response) => {
-    const bodyResult = createMovieSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const movie = await this.movieService.createMovie(bodyResult.data);
+    const movie = await this.movieService.createMovie(request.body as CreateMovieInput);
 
     return response.status(201).json({
       success: true,
@@ -57,18 +43,8 @@ export class MovieController {
   });
 
   updateMovie = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = movieIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid movie ID", paramResult.error.issues);
-    }
-
-    const bodyResult = updateMovieSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
-    const updatedMovie = await this.movieService.updateMovie(id, bodyResult.data);
+    const { id } = request.params;
+    const updatedMovie = await this.movieService.updateMovie(id, request.body as UpdateMovieInput);
 
     if (!updatedMovie) {
       throw new NotFoundError("Movie not found");
@@ -82,12 +58,7 @@ export class MovieController {
   });
 
   deleteMovie = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = movieIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid movie ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const deletedMovie = await this.movieService.deleteMovie(id);
 
     if (!deletedMovie) {

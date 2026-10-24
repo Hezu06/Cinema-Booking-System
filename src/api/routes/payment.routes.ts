@@ -6,6 +6,11 @@ import { VnpayGateway } from "../../data-access/gateways/vnpay.gateway.js";
 import { bookingRepository } from "../../data-access/repositories/booking.repository.js";
 import { emailService } from "../../data-access/gateways/email.gateway.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { validateRequest } from "../middlewares/validate.middleware.js";
+import {
+  createVnpayPaymentSchema,
+  paymentBookingParamSchema,
+} from "../validators/payment.validator.js";
 
 const paymentRouter = express.Router();
 const controller = new PaymentController(
@@ -21,7 +26,17 @@ const controller = new PaymentController(
 paymentRouter.get("/vnpay/ipn", controller.vnpayIpn);
 paymentRouter.get("/vnpay/return", controller.vnpayReturn);
 
-paymentRouter.post("/vnpay/create", authMiddleware, controller.createVnpayPayment);
-paymentRouter.get("/booking/:bookingId", authMiddleware, controller.getBookingPayments);
+paymentRouter.post(
+  "/vnpay/create",
+  authMiddleware,
+  validateRequest({ body: createVnpayPaymentSchema }),
+  controller.createVnpayPayment,
+);
+paymentRouter.get(
+  "/booking/:bookingId",
+  authMiddleware,
+  validateRequest({ params: paymentBookingParamSchema }),
+  controller.getBookingPayments,
+);
 
 export default paymentRouter;

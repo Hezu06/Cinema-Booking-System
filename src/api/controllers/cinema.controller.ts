@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
 import { CinemaService } from "../../business/services/cinema.service.js";
-import {
-  createCinemaSchema,
-  updateCinemaSchema,
-  cinemaIdParamSchema,
+import type {
+  CreateCinemaInput,
+  UpdateCinemaInput,
 } from "../validators/cinema.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
+import { NotFoundError } from "../../shared/errors/index.js";
 
 export class CinemaController {
   constructor(private readonly cinemaService: CinemaService) {}
@@ -22,12 +21,7 @@ export class CinemaController {
   });
 
   getCinemaById = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = cinemaIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const cinema = await this.cinemaService.getCinemaById(id);
 
     if (!cinema) {
@@ -42,12 +36,7 @@ export class CinemaController {
   });
 
   createCinema = asyncHandler(async (request: Request, response: Response) => {
-    const bodyResult = createCinemaSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const cinema = await this.cinemaService.createCinema(bodyResult.data);
+    const cinema = await this.cinemaService.createCinema(request.body as CreateCinemaInput);
 
     return response.status(201).json({
       success: true,
@@ -57,18 +46,8 @@ export class CinemaController {
   });
 
   updateCinema = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = cinemaIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
-    }
-
-    const bodyResult = updateCinemaSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
-    const cinema = await this.cinemaService.updateCinema(id, bodyResult.data);
+    const { id } = request.params;
+    const cinema = await this.cinemaService.updateCinema(id, request.body as UpdateCinemaInput);
 
     if (!cinema) {
       throw new NotFoundError("Cinema not found");
@@ -82,12 +61,7 @@ export class CinemaController {
   });
 
   deleteCinema = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = cinemaIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid cinema ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const cinema = await this.cinemaService.deleteCinema(id);
 
     if (!cinema) {

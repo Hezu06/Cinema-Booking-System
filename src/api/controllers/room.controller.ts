@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
 import { RoomService } from "../../business/services/room.service.js";
-import {
-  createRoomSchema,
-  updateRoomSchema,
-  roomIdParamSchema,
+import type {
+  CreateRoomInput,
+  UpdateRoomInput,
 } from "../validators/room.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
+import { NotFoundError } from "../../shared/errors/index.js";
 
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
@@ -22,12 +21,7 @@ export class RoomController {
   });
 
   getRoomById = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = roomIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid room ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const room = await this.roomService.getRoomById(id);
 
     if (!room) {
@@ -42,12 +36,7 @@ export class RoomController {
   });
 
   createRoom = asyncHandler(async (request: Request, response: Response) => {
-    const bodyResult = createRoomSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const room = await this.roomService.createRoom(bodyResult.data);
+    const room = await this.roomService.createRoom(request.body as CreateRoomInput);
 
     return response.status(201).json({
       success: true,
@@ -57,18 +46,8 @@ export class RoomController {
   });
 
   updateRoom = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = roomIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid room ID", paramResult.error.issues);
-    }
-
-    const bodyResult = updateRoomSchema.safeParse(request.body);
-    if (!bodyResult.success) {
-      throw new ValidationError("Validation failed", bodyResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
-    const room = await this.roomService.updateRoom(id, bodyResult.data);
+    const { id } = request.params;
+    const room = await this.roomService.updateRoom(id, request.body as UpdateRoomInput);
 
     if (!room) {
       throw new NotFoundError("Room not found");
@@ -82,12 +61,7 @@ export class RoomController {
   });
 
   deleteRoom = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
-    const paramResult = roomIdParamSchema.safeParse(request.params);
-    if (!paramResult.success) {
-      throw new ValidationError("Invalid room ID", paramResult.error.issues);
-    }
-
-    const { id } = paramResult.data;
+    const { id } = request.params;
     const room = await this.roomService.deleteRoom(id);
 
     if (!room) {

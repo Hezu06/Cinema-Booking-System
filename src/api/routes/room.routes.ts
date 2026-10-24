@@ -24,6 +24,16 @@ import {
   requireAdmin,
 } from "../middlewares/role.middleware.js";
 
+import {
+  validateRequest,
+} from "../middlewares/validate.middleware.js";
+
+import {
+  createRoomSchema,
+  updateRoomSchema,
+  roomIdParamSchema,
+} from "../validators/room.validator.js";
+
 const roomRouter = express.Router();
 
 const roomRepository =
@@ -41,38 +51,34 @@ const roomController =
   new RoomController(roomService);
 
 // UC-12: Room management is Admin-only.
+roomRouter.use(authMiddleware, requireAdmin);
+
 roomRouter.get(
   "/",
-  authMiddleware,
-  requireAdmin,
   roomController.getAllRooms,
 );
 
 roomRouter.get(
   "/:id",
-  authMiddleware,
-  requireAdmin,
+  validateRequest({ params: roomIdParamSchema }),
   roomController.getRoomById,
 );
 
 roomRouter.post(
   "/",
-  authMiddleware,
-  requireAdmin,
+  validateRequest({ body: createRoomSchema }),
   roomController.createRoom,
 );
 
 roomRouter.put(
   "/:id",
-  authMiddleware,
-  requireAdmin,
+  validateRequest({ params: roomIdParamSchema, body: updateRoomSchema }),
   roomController.updateRoom,
 );
 
 roomRouter.delete(
   "/:id",
-  authMiddleware,
-  requireAdmin,
+  validateRequest({ params: roomIdParamSchema }),
   roomController.deleteRoom,
 );
 

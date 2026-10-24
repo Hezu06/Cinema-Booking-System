@@ -1,24 +1,13 @@
 import type { Request, Response } from "express";
 import type { ShowtimeService } from "../../business/services/showtime.service.js";
-import {
-  createShowtimeSchema,
-  showtimeIdParamSchema,
-  showtimeQuerySchema,
-  updateShowtimeSchema,
-} from "../validators/showtime.validator.js";
 import { asyncHandler } from "../utils/async-handler.util.js";
-import { NotFoundError, ValidationError } from "../../shared/errors/index.js";
+import { NotFoundError } from "../../shared/errors/index.js";
 
 export class ShowtimeController {
   constructor(private readonly showtimeService: ShowtimeService) {}
 
   getAllShowtimes = asyncHandler(async (request: Request, response: Response) => {
-    const query = showtimeQuerySchema.safeParse(request.query);
-    if (!query.success) {
-      throw new ValidationError("Invalid query", query.error.issues);
-    }
-
-    const data = await this.showtimeService.getAllShowtimes(query.data);
+    const data = await this.showtimeService.getAllShowtimes(request.query as any);
     return response.status(200).json({
       success: true,
       message: "Get all showtimes",
@@ -26,13 +15,8 @@ export class ShowtimeController {
     });
   });
 
-  getShowtimeById = asyncHandler(async (request: Request, response: Response) => {
-    const params = showtimeIdParamSchema.safeParse(request.params);
-    if (!params.success) {
-      throw new ValidationError("Invalid showtime ID", params.error.issues);
-    }
-
-    const data = await this.showtimeService.getShowtimeById(params.data.id);
+  getShowtimeById = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const data = await this.showtimeService.getShowtimeById(request.params.id);
     if (!data) {
       throw new NotFoundError("Showtime not found");
     }
@@ -44,13 +28,8 @@ export class ShowtimeController {
     });
   });
 
-  getShowtimeSeats = asyncHandler(async (request: Request, response: Response) => {
-    const params = showtimeIdParamSchema.safeParse(request.params);
-    if (!params.success) {
-      throw new ValidationError("Invalid showtime ID", params.error.issues);
-    }
-
-    const data = await this.showtimeService.getShowtimeSeats(params.data.id);
+  getShowtimeSeats = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const data = await this.showtimeService.getShowtimeSeats(request.params.id);
     if (!data) {
       throw new NotFoundError("Showtime not found");
     }
@@ -63,12 +42,7 @@ export class ShowtimeController {
   });
 
   createShowtime = asyncHandler(async (request: Request, response: Response) => {
-    const body = createShowtimeSchema.safeParse(request.body);
-    if (!body.success) {
-      throw new ValidationError("Validation failed", body.error.issues);
-    }
-
-    const data = await this.showtimeService.createShowtime(body.data);
+    const data = await this.showtimeService.createShowtime(request.body);
     return response.status(201).json({
       success: true,
       message: "Showtime created",
@@ -76,17 +50,8 @@ export class ShowtimeController {
     });
   });
 
-  updateShowtime = asyncHandler(async (request: Request, response: Response) => {
-    const params = showtimeIdParamSchema.safeParse(request.params);
-    const body = updateShowtimeSchema.safeParse(request.body);
-    if (!params.success) {
-      throw new ValidationError("Invalid showtime ID", params.error.issues);
-    }
-    if (!body.success) {
-      throw new ValidationError("Validation failed", body.error.issues);
-    }
-
-    const data = await this.showtimeService.updateShowtime(params.data.id, body.data);
+  updateShowtime = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const data = await this.showtimeService.updateShowtime(request.params.id, request.body);
     if (!data) {
       throw new NotFoundError("Showtime not found");
     }
@@ -98,13 +63,8 @@ export class ShowtimeController {
     });
   });
 
-  deleteShowtime = asyncHandler(async (request: Request, response: Response) => {
-    const params = showtimeIdParamSchema.safeParse(request.params);
-    if (!params.success) {
-      throw new ValidationError("Invalid showtime ID", params.error.issues);
-    }
-
-    const data = await this.showtimeService.deleteShowtime(params.data.id);
+  deleteShowtime = asyncHandler(async (request: Request<{ id: string }>, response: Response) => {
+    const data = await this.showtimeService.deleteShowtime(request.params.id);
     if (!data) {
       throw new NotFoundError("Showtime not found");
     }
