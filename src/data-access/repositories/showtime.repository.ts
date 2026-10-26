@@ -6,6 +6,16 @@ import type {
   UpdateShowtimeData,
 } from "../../business/interfaces/showtime.interface.js";
 import type { Showtime, ShowtimeSeatView } from "../../business/models/showtime.model.js";
+import { ConflictError } from "../../shared/errors/index.js";
+
+function isPrismaErrorWithCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as Record<string, unknown>).code === code
+  );
+}
 
 const showtimeInclude = {
   movie: true,
@@ -199,7 +209,10 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
       });
       return mapShowtime(updated);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") return null;
+      if (isPrismaErrorWithCode(error, "P2025")) return null;
+      if (isPrismaErrorWithCode(error, "P2003")) {
+        throw new ConflictError("Showtime has related booking data");
+      }
       throw error;
     }
   }
@@ -211,7 +224,10 @@ export class PrismaShowtimeRepository implements ShowtimeRepository {
       const deleted = await prisma.showtime.delete({ where: { id } });
       return mapShowtime(deleted);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") return null;
+      if (isPrismaErrorWithCode(error, "P2025")) return null;
+      if (isPrismaErrorWithCode(error, "P2003")) {
+        throw new ConflictError("Showtime has related booking data");
+      }
       throw error;
     }
   }

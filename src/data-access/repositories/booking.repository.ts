@@ -1,3 +1,4 @@
+import { ConflictError, NotFoundError } from "../../shared/errors/index.js";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../prisma/client.js";
 import type {
@@ -164,9 +165,9 @@ export class PrismaBookingRepository implements BookingRepository {
         const showtime = await tx.showtime.findUnique({
           where: { id: data.showtimeId },
         });
-        if (!showtime) throw new Error("SHOWTIME_NOT_FOUND");
-        if (showtime.status !== "SCHEDULED") throw new Error("SHOWTIME_NOT_AVAILABLE");
-        if (new Date() >= showtime.startTime) throw new Error("SHOWTIME_ALREADY_STARTED");
+        if (!showtime) throw new NotFoundError("Suất chiếu không tồn tại trong hệ thống");
+        if (showtime.status !== "SCHEDULED") throw new ConflictError("Suất chiếu này hiện không mở để đặt vé");
+        if (new Date() >= showtime.startTime) throw new ConflictError("Suất chiếu đã bắt đầu hoặc đã qua, không thể thao tác");
 
         // 2. Query requested showtime seats (supports either ShowtimeSeat ID or physical Seat ID)
         let showtimeSeats = await tx.showtimeSeat.findMany({
@@ -181,7 +182,7 @@ export class PrismaBookingRepository implements BookingRepository {
         });
 
         if (showtimeSeats.length !== data.showtimeSeatIds.length) {
-          throw new Error("SOME_SEATS_NOT_FOUND");
+          throw new NotFoundError("Một hoặc nhiều ghế được chọn không tồn tại trong suất chiếu này");
         }
 
         // Lock the selected seat rows until this transaction finishes. This
@@ -201,10 +202,10 @@ export class PrismaBookingRepository implements BookingRepository {
         // Payment can only start from seats that are still held by this user.
         for (const s of showtimeSeats) {
           if (!s.seat.active) {
-            throw new Error("SOME_SEATS_NOT_FOUND");
+            throw new NotFoundError("Một hoặc nhiều ghế được chọn không tồn tại trong suất chiếu này");
           }
-          if (s.status !== "HELD" || s.heldByUserId !== data.userId) throw new Error("HOLD_REQUIRED");
-          if (!s.holdExpiresAt || s.holdExpiresAt <= now) throw new Error("HOLD_EXPIRED");
+          if (s.status !== "HELD" || s.heldByUserId !== data.userId) throw new ConflictError("Bạn cần giữ ghế trước khi tiến hành thanh toán");
+          if (!s.holdExpiresAt || s.holdExpiresAt <= now) throw new ConflictError("Thời gian giữ ghế đã hết hạn, vui lòng chọn lại ghế");
         }
 
         // 3. Ensure these seats are not already attached to another active booking.
@@ -229,7 +230,7 @@ export class PrismaBookingRepository implements BookingRepository {
             && bookedSeatIds.every((seatId, index) => seatId === requestedSeatIds[index]);
         });
         if (reusableBooking) return reusableBooking;
-        if (conflictingBookings.length > 0) throw new Error("SEATS_ALREADY_BOOKED");
+        if (conflictingBookings.length > 0) throw new ConflictError("Một hoặc nhiều ghế đã được khách hàng khác đặt trước đó");
 
         // 4. Calculate total amount
         const totalAmount = showtimeSeats.reduce((sum, s) => sum + Number(s.price), 0);
@@ -272,7 +273,7 @@ export class PrismaBookingRepository implements BookingRepository {
           include: bookingInclude,
         });
 
-        if (!result) throw new Error("BOOKING_CREATION_FAILED");
+        if (!result) throw new ConflictError("Không thể khởi tạo đơn đặt vé");
         return result;
       },
       {
@@ -293,9 +294,9 @@ export class PrismaBookingRepository implements BookingRepository {
         const showtime = await tx.showtime.findUnique({
           where: { id: data.showtimeId },
         });
-        if (!showtime) throw new Error("SHOWTIME_NOT_FOUND");
-        if (showtime.status !== "SCHEDULED") throw new Error("SHOWTIME_NOT_AVAILABLE");
-        if (now >= showtime.startTime) throw new Error("SHOWTIME_ALREADY_STARTED");
+        if (!showtime) throw new NotFoundError("Suất chiếu không tồn tại trong hệ thống");
+        if (showtime.status !== "SCHEDULED") throw new ConflictError("Suất chiếu này hiện không mở để đặt vé");
+        if (now >= showtime.startTime) throw new ConflictError("Suất chiếu đã bắt đầu hoặc đã qua, không thể thao tác");
 
         // 2. Query requested showtime seats
         const showtimeSeats = await tx.showtimeSeat.findMany({
@@ -310,7 +311,7 @@ export class PrismaBookingRepository implements BookingRepository {
         });
 
         if (showtimeSeats.length !== data.showtimeSeatIds.length) {
-          throw new Error("SOME_SEATS_NOT_FOUND");
+          throw new NotFoundError("Một hoặc nhiều ghế được chọn không tồn tại trong suất chiếu này");
         }
 
         const actualShowtimeSeatIds = showtimeSeats.map((s) => s.id);
@@ -318,10 +319,10 @@ export class PrismaBookingRepository implements BookingRepository {
         // 3. Check seat status conflicts
         for (const s of showtimeSeats) {
           if (!s.seat.active) {
-            throw new Error("SOME_SEATS_NOT_FOUND");
+            throw new NotFoundError("Một hoặc nhiều ghế được chọn không tồn tại trong suất chiếu này");
           }
           if (s.status === "BOOKED") {
-            throw new Error("SEATS_ALREADY_BOOKED");
+            throw new ConflictError("Một hoặc nhiều ghế đã được khách hàng khác đặt trước đó");
           }
           if (
             s.status === "HELD" &&
@@ -330,7 +331,7 @@ export class PrismaBookingRepository implements BookingRepository {
             s.holdExpiresAt &&
             s.holdExpiresAt > now
           ) {
-            throw new Error("SEATS_HELD_BY_ANOTHER_USER");
+            throw new ConflictError("Một hoặc nhiều ghế đang được người khác giữ, vui lòng chọn ghế khác");
           }
         }
 
@@ -367,7 +368,7 @@ export class PrismaBookingRepository implements BookingRepository {
         });
 
         if (updateResult.count !== actualShowtimeSeatIds.length) {
-          throw new Error("SEATS_HELD_BY_ANOTHER_USER");
+          throw new ConflictError("Một hoặc nhiều ghế đang được người khác giữ, vui lòng chọn ghế khác");
         }
 
         return {
@@ -506,21 +507,21 @@ export class PrismaBookingRepository implements BookingRepository {
         });
 
         if (!current) return null;
-        if (current.status === "CANCELLED") throw new Error("BOOKING_ALREADY_CANCELLED");
-        if (current.status === "EXPIRED") throw new Error("BOOKING_EXPIRED");
-        if (new Date() >= current.showtime.startTime) throw new Error("SHOWTIME_ALREADY_STARTED");
+        if (current.status === "CANCELLED") throw new ConflictError("Đơn hàng này đã bị hủy trước đó");
+        if (current.status === "EXPIRED") throw new ConflictError("Đơn hàng này đã hết hạn thanh toán");
+        if (new Date() >= current.showtime.startTime) throw new ConflictError("Suất chiếu đã bắt đầu hoặc đã qua, không thể thao tác");
         if (current.status === "CONFIRMED") {
           const cutoff = new Date(current.showtime.startTime.getTime() - 2 * 60 * 60 * 1000);
-          if (new Date() > cutoff) throw new Error("CANCELLATION_WINDOW_CLOSED");
-          if (current.tickets.some((ticket) => ticket.status === "USED")) throw new Error("TICKET_ALREADY_USED");
+          if (new Date() > cutoff) throw new ConflictError("Đã quá thời gian cho phép hủy vé (trước giờ chiếu 60 phút)");
+          if (current.tickets.some((ticket) => ticket.status === "USED")) throw new ConflictError("Vé trong đơn hàng đã được sử dụng để vào rạp, không thể hủy");
         }
 
         const successfulPayment = current.payments.find((payment) =>
           payment.status === "SUCCESS" || payment.status === "REFUND_PENDING" || payment.status === "REFUNDED",
         );
-        if (current.status === "CONFIRMED" && !successfulPayment) throw new Error("PAYMENT_NOT_FOUND");
+        if (current.status === "CONFIRMED" && !successfulPayment) throw new NotFoundError("Không tìm thấy thông tin thanh toán cho đơn hàng này");
         if (successfulPayment?.status === "REFUNDED" || successfulPayment?.refund?.status === "SUCCESS") {
-          throw new Error("PAYMENT_ALREADY_REFUNDED");
+          throw new ConflictError("Khoản thanh toán của đơn hàng này đã được hoàn tiền trước đó");
         }
 
         // Update booking to CANCELLED

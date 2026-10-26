@@ -9,6 +9,13 @@ import type {
 import type { EmailService } from "../interfaces/email.interface.js";
 import type { BookingDetail } from "../models/booking.model.js";
 import { getClientTicketUrl } from "../utils/client-url.util.js";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+} from "../../shared/errors/index.js";
 
 function generateBookingCode(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -29,16 +36,16 @@ export class BookingService {
     const seatIds = data.showtimeSeatIds;
 
     if (!seatIds || seatIds.length === 0) {
-      throw new Error("NO_SEATS_SPECIFIED");
+      throw new BadRequestError("Vui lòng chọn ít nhất một ghế");
     }
 
     const uniqueSeatIds = new Set(seatIds);
     if (uniqueSeatIds.size !== seatIds.length) {
-      throw new Error("DUPLICATE_SEATS_IN_REQUEST");
+      throw new BadRequestError("Danh sách ghế không được trùng lặp");
     }
 
     if (seatIds.length > 8) {
-      throw new Error("MAX_SEATS_EXCEEDED");
+      throw new BadRequestError("Mỗi lần chỉ được chọn tối đa 8 ghế");
     }
 
     const duration = data.durationMinutes && data.durationMinutes > 0 ? data.durationMinutes : 10;
@@ -77,12 +84,12 @@ export class BookingService {
     // Check duplicate seat IDs in request
     const uniqueSeatIds = new Set(seatIds);
     if (uniqueSeatIds.size !== seatIds.length) {
-      throw new Error("DUPLICATE_SEATS_IN_REQUEST");
+      throw new BadRequestError("Danh sách ghế không được trùng lặp");
     }
 
     // Limit maximum seats per single booking to 8
     if (seatIds.length > 8) {
-      throw new Error("MAX_SEATS_EXCEEDED");
+      throw new BadRequestError("Mỗi lần chỉ được chọn tối đa 8 ghế");
     }
 
     const bookingCode = generateBookingCode();
@@ -111,7 +118,7 @@ export class BookingService {
     if (!booking) return null;
 
     if (user.role !== "ADMIN" && booking.userId !== user.userId) {
-      throw new Error("FORBIDDEN");
+      throw new ForbiddenError("Bạn không có quyền thao tác trên đơn hàng này");
     }
 
     return booking;
@@ -126,7 +133,7 @@ export class BookingService {
     if (!current) return null;
 
     if (user.role !== "ADMIN" && current.userId !== user.userId) {
-      throw new Error("FORBIDDEN");
+      throw new ForbiddenError("Bạn không có quyền thao tác trên đơn hàng này");
     }
 
     return this.bookingRepository.cancel(id, reason);
@@ -141,22 +148,22 @@ export class BookingService {
     user: { userId: string; role: string },
   ): Promise<{ success: boolean; message: string }> {
     const booking = await this.bookingRepository.findById(id);
-    if (!booking) throw new Error("BOOKING_NOT_FOUND");
+    if (!booking) throw new NotFoundError("Không tìm thấy đơn hàng");
 
     if (user.role !== "ADMIN" && booking.userId !== user.userId) {
-      throw new Error("FORBIDDEN");
+      throw new ForbiddenError("Bạn không có quyền thao tác trên đơn hàng này");
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new Error("BOOKING_NOT_CONFIRMED");
+      throw new ConflictError("Đơn đặt vé chưa được thanh toán xác nhận");
     }
 
     if (!booking.user?.email) {
-      throw new Error("NO_USER_EMAIL");
+      throw new BadRequestError("Tài khoản đặt vé không có địa chỉ email");
     }
 
     if (!this.emailService) {
-      throw new Error("EMAIL_SERVICE_NOT_AVAILABLE");
+      throw new ServiceUnavailableError("Dịch vụ gửi email hiện không khả dụng");
     }
 
     const seatLabels = booking.bookingSeats

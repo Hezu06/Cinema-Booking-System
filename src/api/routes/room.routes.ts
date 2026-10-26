@@ -1,79 +1,39 @@
 import express from "express";
-
+import { container } from "../../config/container.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireAdmin } from "../middlewares/role.middleware.js";
+import { validateRequest } from "../middlewares/validate.middleware.js";
 import {
-  RoomController,
-} from "../controllers/room.controller.js";
-
-import {
-  RoomService,
-} from "../../business/services/room.service.js";
-
-import {
-  PrismaRoomRepository,
-} from "../../data-access/repositories/room.repository.js";
-
-import {
-  PrismaCinemaRepository,
-} from "../../data-access/repositories/cinema.repository.js";
-
-import {
-  authMiddleware,
-} from "../middlewares/auth.middleware.js";
-
-import {
-  requireAdmin,
-} from "../middlewares/role.middleware.js";
+  createRoomSchema,
+  updateRoomSchema,
+  roomIdParamSchema,
+} from "../validators/room.validator.js";
 
 const roomRouter = express.Router();
 
-const roomRepository =
-  new PrismaRoomRepository();
-
-const cinemaRepository =
-  new PrismaCinemaRepository();
-
-const roomService = new RoomService(
-  roomRepository,
-  cinemaRepository,
-);
-
-const roomController =
-  new RoomController(roomService);
-
 // UC-12: Room management is Admin-only.
-roomRouter.get(
-  "/",
-  authMiddleware,
-  requireAdmin,
-  roomController.getAllRooms,
-);
+roomRouter.use(authMiddleware, requireAdmin);
 
+roomRouter.get("/", container.roomController.getAllRooms);
 roomRouter.get(
   "/:id",
-  authMiddleware,
-  requireAdmin,
-  roomController.getRoomById,
+  validateRequest({ params: roomIdParamSchema }),
+  container.roomController.getRoomById
 );
-
 roomRouter.post(
   "/",
-  authMiddleware,
-  requireAdmin,
-  roomController.createRoom,
+  validateRequest({ body: createRoomSchema }),
+  container.roomController.createRoom
 );
-
 roomRouter.put(
   "/:id",
-  authMiddleware,
-  requireAdmin,
-  roomController.updateRoom,
+  validateRequest({ params: roomIdParamSchema, body: updateRoomSchema }),
+  container.roomController.updateRoom
 );
-
 roomRouter.delete(
   "/:id",
-  authMiddleware,
-  requireAdmin,
-  roomController.deleteRoom,
+  validateRequest({ params: roomIdParamSchema }),
+  container.roomController.deleteRoom
 );
 
 export default roomRouter;

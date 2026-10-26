@@ -3,10 +3,13 @@ import type {
   CreateRoomData,
   UpdateRoomData,
 } from "../interfaces/room.interface.js";
-
 import type {
   CinemaRepository,
 } from "../interfaces/cinema.interface.js";
+import {
+  ConflictError,
+  NotFoundError,
+} from "../../shared/errors/index.js";
 
 export class RoomService {
   constructor(
@@ -23,25 +26,23 @@ export class RoomService {
   }
 
   async createRoom(data: CreateRoomData) {
-    const cinema =
-      await this.cinemaRepository.findById(data.cinemaId);
+    const cinema = await this.cinemaRepository.findById(data.cinemaId);
 
     if (!cinema) {
-      throw new Error(
+      throw new NotFoundError(
         "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
       );
     }
 
     const trimmedName = data.name.trim();
 
-    const existingRoom =
-      await this.roomRepository.findByCinemaIdAndName(
-        data.cinemaId,
-        trimmedName,
-      );
+    const existingRoom = await this.roomRepository.findByCinemaIdAndName(
+      data.cinemaId,
+      trimmedName,
+    );
 
     if (existingRoom) {
-      throw new Error(
+      throw new ConflictError(
         `Phòng '${trimmedName}' đã tồn tại trong rạp này`,
       );
     }
@@ -54,33 +55,24 @@ export class RoomService {
     return this.roomRepository.create(newRoom);
   }
 
-  async updateRoom(
-    id: string,
-    data: UpdateRoomData,
-  ) {
-    const currentRoom =
-      await this.roomRepository.findById(id);
+  async updateRoom(id: string, data: UpdateRoomData) {
+    const currentRoom = await this.roomRepository.findById(id);
 
     if (!currentRoom) {
       return null;
     }
 
     const targetCinemaId =
-      data.cinemaId !== undefined
-        ? data.cinemaId
-        : currentRoom.cinemaId;
+      data.cinemaId !== undefined ? data.cinemaId : currentRoom.cinemaId;
 
     const targetName =
-      data.name !== undefined
-        ? data.name.trim()
-        : currentRoom.name;
+      data.name !== undefined ? data.name.trim() : currentRoom.name;
 
-    // UC-12: validate the Room–Cinema relationship before saving.
-    const cinema =
-      await this.cinemaRepository.findById(targetCinemaId);
+    // Validate the Room–Cinema relationship before saving.
+    const cinema = await this.cinemaRepository.findById(targetCinemaId);
 
     if (!cinema) {
-      throw new Error(
+      throw new NotFoundError(
         "Rạp chiếu (cinemaId) không tồn tại trong hệ thống",
       );
     }
@@ -89,14 +81,13 @@ export class RoomService {
       targetCinemaId !== currentRoom.cinemaId ||
       targetName !== currentRoom.name
     ) {
-      const conflictRoom =
-        await this.roomRepository.findByCinemaIdAndName(
-          targetCinemaId,
-          targetName,
-        );
+      const conflictRoom = await this.roomRepository.findByCinemaIdAndName(
+        targetCinemaId,
+        targetName,
+      );
 
       if (conflictRoom && conflictRoom.id !== id) {
-        throw new Error(
+        throw new ConflictError(
           `Phòng '${targetName}' đã tồn tại trong rạp này`,
         );
       }
@@ -104,10 +95,7 @@ export class RoomService {
 
     const updatedData: UpdateRoomData = {
       ...data,
-
-      ...(data.name !== undefined
-        ? { name: targetName }
-        : {}),
+      ...(data.name !== undefined ? { name: targetName } : {}),
     };
 
     return this.roomRepository.update(id, updatedData);

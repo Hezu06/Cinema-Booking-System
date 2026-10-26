@@ -1,3 +1,4 @@
+import { ConflictError, ServiceUnavailableError } from "../../shared/errors/index.js";
 import type {
   MovieRepository,
   CreateMovieData,
@@ -36,9 +37,7 @@ export class MovieService {
     )
 
     if (existingMovie) {
-      throw new Error(
-        `Phim '${trimmedTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`
-      )
+      throw new ConflictError(`Phim '${trimmedTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`)
     }
 
     const newMovie: CreateMovieData = {
@@ -74,9 +73,7 @@ export class MovieService {
       )
 
       if (conflictMovie && conflictMovie.id !== id) {
-        throw new Error(
-          `Phim '${targetTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`
-        )
+        throw new ConflictError(`Phim '${targetTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`)
       }
     }
 
@@ -95,7 +92,7 @@ export class MovieService {
 
   async syncExternalMovies(options?: SyncMoviesOptions): Promise<SyncMoviesResult> {
     if (!this.externalMovieGateway) {
-      throw new Error("Dịch vụ lấy phim ngoại vi (External Movie Gateway) chưa được cấu hình");
+      throw new ServiceUnavailableError("Dịch vụ lấy phim ngoại vi (External Movie Gateway) chưa được cấu hình");
     }
 
     const markEndedOlderThanDays = options?.markEndedOlderThanDays ?? 60;

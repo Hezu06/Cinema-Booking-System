@@ -8,6 +8,12 @@ import type { BookingRepository } from "../interfaces/booking.interface.js";
 import type { EmailService } from "../interfaces/email.interface.js";
 import type { PaymentView } from "../models/payment.model.js";
 import { getClientTicketUrl } from "../utils/client-url.util.js";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+} from "../../shared/errors/index.js";
 
 function createTxnRef(): string {
   // VNPAY requires vnp_TxnRef to be alphanumeric. Do not use separators such
@@ -36,12 +42,22 @@ export class PaymentService {
     ipAddress: string,
     bankCode?: string,
   ): Promise<{ payment: PaymentView; paymentUrl: string }> {
-    if (!this.paymentGateway.isConfigured()) throw new Error("VNPAY_NOT_CONFIGURED");
+    if (!this.paymentGateway.isConfigured()) {
+      throw new ServiceUnavailableError("VNPAY Sandbox chưa được cấu hình");
+    }
     const booking = await this.paymentRepository.findBookingContext(bookingId);
-    if (!booking) throw new Error("BOOKING_NOT_FOUND");
-    if (booking.userId !== userId) throw new Error("FORBIDDEN");
-    if (booking.status !== "PENDING") throw new Error("BOOKING_NOT_PENDING");
-    if (!booking.expiresAt || booking.expiresAt <= new Date()) throw new Error("BOOKING_EXPIRED");
+    if (!booking) {
+      throw new NotFoundError("Booking không tồn tại");
+    }
+    if (booking.userId !== userId) {
+      throw new ForbiddenError("Bạn không có quyền thao tác với booking này");
+    }
+    if (booking.status !== "PENDING") {
+      throw new ConflictError("Booking không ở trạng thái chờ thanh toán");
+    }
+    if (!booking.expiresAt || booking.expiresAt <= new Date()) {
+      throw new ConflictError("Booking đã hết hạn thanh toán");
+    }
 
     const attempts = await this.paymentRepository.findByBookingId(bookingId);
     const payment = attempts.find((attempt) => attempt.status === "PENDING")
@@ -63,8 +79,12 @@ export class PaymentService {
 
   async getBookingPayments(userId: string, role: string, bookingId: string): Promise<PaymentView[]> {
     const booking = await this.paymentRepository.findBookingContext(bookingId);
-    if (!booking) throw new Error("BOOKING_NOT_FOUND");
-    if (role !== "ADMIN" && booking.userId !== userId) throw new Error("FORBIDDEN");
+    if (!booking) {
+      throw new NotFoundError("Booking không tồn tại");
+    }
+    if (role !== "ADMIN" && booking.userId !== userId) {
+      throw new ForbiddenError("Bạn không có quyền thao tác với booking này");
+    }
     return this.paymentRepository.findByBookingId(bookingId);
   }
 

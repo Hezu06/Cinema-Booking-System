@@ -1,9 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import type { UserRole } from "../../business/models/user.model.js";
-import { userRepository } from "../../data-access/repositories/user.repository.js";
+import { container } from "../../config/container.js";
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<
+    P = any,
+    ResBody = any,
+    ReqBody = any,
+    ReqQuery = any,
+> extends Request<P, ResBody, ReqBody, ReqQuery> {
     user: {
         userId: string;
         role: UserRole;
@@ -73,7 +78,7 @@ export async function authMiddleware(
     }
 
     try {
-        const user = await userRepository.findById(payload.userId);
+        const user = await container.userRepository.findById(payload.userId);
 
         if (!user) {
             return res.status(401).json({

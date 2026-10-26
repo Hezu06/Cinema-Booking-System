@@ -1,76 +1,47 @@
 import express from "express";
-
+import { container } from "../../config/container.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireAdmin } from "../middlewares/role.middleware.js";
+import { validateRequest } from "../middlewares/validate.middleware.js";
 import {
-  CinemaController,
-} from "../controllers/cinema.controller.js";
+  createCinemaSchema,
+  updateCinemaSchema,
+  cinemaIdParamSchema,
+} from "../validators/cinema.validator.js";
 
-import {
-  CinemaService,
-} from "../../business/services/cinema.service.js";
-
-import {
-  PrismaCinemaRepository,
-} from "../../data-access/repositories/cinema.repository.js";
-
-import {
-  authMiddleware,
-} from "../middlewares/auth.middleware.js";
-
-import {
-  requireAdmin,
-} from "../middlewares/role.middleware.js";
-
-const cinemaRouter =
-  express.Router();
-
-const cinemaRepository =
-  new PrismaCinemaRepository();
-
-const cinemaService =
-  new CinemaService(
-    cinemaRepository
-  );
-
-const cinemaController =
-  new CinemaController(
-    cinemaService
-  );
+const cinemaRouter = express.Router();
 
 /*
  * UC-11 Manage Cinemas & Browse Cinemas
  *
  * Cinema browsing is public; management (create/update/delete) is Admin-only.
  */
-
-cinemaRouter.get(
-  "/",
-  cinemaController.getAllCinemas
-);
-
+cinemaRouter.get("/", container.cinemaController.getAllCinemas);
 cinemaRouter.get(
   "/:id",
-  cinemaController.getCinemaById
+  validateRequest({ params: cinemaIdParamSchema }),
+  container.cinemaController.getCinemaById
 );
-
 cinemaRouter.post(
   "/",
   authMiddleware,
   requireAdmin,
-  cinemaController.createCinema
+  validateRequest({ body: createCinemaSchema }),
+  container.cinemaController.createCinema
 );
-
 cinemaRouter.put(
   "/:id",
   authMiddleware,
   requireAdmin,
-  cinemaController.updateCinema
+  validateRequest({ params: cinemaIdParamSchema, body: updateCinemaSchema }),
+  container.cinemaController.updateCinema
 );
-
 cinemaRouter.delete(
   "/:id",
   authMiddleware,
   requireAdmin,
-  cinemaController.deleteCinema
+  validateRequest({ params: cinemaIdParamSchema }),
+  container.cinemaController.deleteCinema
 );
 
 export default cinemaRouter;
