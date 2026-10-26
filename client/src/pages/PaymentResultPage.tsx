@@ -47,7 +47,28 @@ export const PaymentResultPage: React.FC = () => {
     || (returnCode !== null && returnCode !== '00')
     || payment?.status === 'FAILED'
     || payment?.status === 'EXPIRED'
-    || booking?.status === 'EXPIRED';
+    || booking?.status === 'EXPIRED'
+    || booking?.status === 'CANCELLED';
+
+  const showtimeId = booking?.showtimeId
+    || booking?.showtime?.id
+    || (() => {
+      try {
+        const receiptStr = sessionStorage.getItem('ticketor_latest_receipt');
+        if (receiptStr) {
+          const receipt = JSON.parse(receiptStr);
+          return receipt.showtime?.id || null;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    })();
+
+  const handleReselectSeats = () => {
+    sessionStorage.removeItem('ticketor_pending_booking_id');
+    sessionStorage.removeItem('ticketor_booking_draft');
+  };
 
   return (
     <div className="max-w-xl mx-auto px-4 py-20 text-center">
@@ -66,9 +87,30 @@ export const PaymentResultPage: React.FC = () => {
             : 'Chưa nhận được kết quả IPN. Bạn có thể kiểm tra lại trong lịch sử booking.'}
         </p>
         {bookingId && <div className="text-xs font-mono text-gray-500">Booking: {booking?.bookingCode || bookingId}</div>}
-        <div className="flex justify-center gap-3 pt-3">
-          {success && bookingId && <Link to={`/ticket/${bookingId}`} className="px-5 py-3 rounded-xl bg-brand-primary text-black font-bold text-sm">Xem vé</Link>}
-          <Link to="/my-bookings" className="px-5 py-3 rounded-xl border border-brand-border text-white font-semibold text-sm">Lịch sử booking</Link>
+        <div className="flex flex-wrap justify-center gap-3 pt-3">
+          {success && bookingId && (
+            <Link
+              to={`/ticket/${bookingId}`}
+              className="px-5 py-3 rounded-xl bg-brand-primary text-black font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              Xem vé
+            </Link>
+          )}
+          {failed && showtimeId && (
+            <Link
+              to={`/booking/${showtimeId}`}
+              onClick={handleReselectSeats}
+              className="px-5 py-3 rounded-xl bg-brand-primary text-black font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              Chọn lại ghế
+            </Link>
+          )}
+          <Link
+            to="/my-bookings"
+            className="px-5 py-3 rounded-xl border border-brand-border text-white font-semibold text-sm hover:bg-[#20202E] transition-colors"
+          >
+            Lịch sử booking
+          </Link>
         </div>
       </div>
     </div>

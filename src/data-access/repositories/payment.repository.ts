@@ -99,15 +99,30 @@ export class PrismaPaymentRepository implements PaymentRepository {
           data: { ...gatewayData, status: "FAILED" },
         });
         if (failed.count === 0) return { rspCode: "02", message: "Order already confirmed" };
+
         const bookingExpired = !payment.booking.expiresAt || payment.booking.expiresAt <= new Date();
-        if (payment.booking.status === "PENDING" && bookingExpired) {
-          await tx.booking.update({ where: { id: payment.bookingId }, data: { status: "EXPIRED" } });
+        const nextBookingStatus = bookingExpired ? "EXPIRED" : "CANCELLED";
+
+        if (payment.booking.status === "PENDING") {
+          await tx.booking.update({
+            where: { id: payment.bookingId },
+            data: { status: nextBookingStatus },
+          });
+
           const ids = payment.booking.bookingSeats.map((seat) => seat.showtimeSeatId);
           await tx.showtimeSeat.updateMany({
             where: { id: { in: ids }, status: "HELD", heldByUserId: payment.booking.userId },
             data: { status: "AVAILABLE", heldByUserId: null, holdExpiresAt: null },
           });
         }
+
+        const updated = await tx.payment.findUnique({ where: { id: payment.id }, include: paymentInclude });
+        return {
+          rspCode: "00",
+          message: data.responseCode === "24" ? "Customer cancelled transaction" : "Payment failed",
+          payment: updated ? mapPayment(updated) : undefined,
+          newlyConfirmed: false,
+        };
       } else {
         if (payment.booking.status !== "PENDING") return { rspCode: "02", message: "Order already confirmed" };
         const claimed = await tx.payment.updateMany({
@@ -137,6 +152,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
             rspCode: "00",
             message: "Payment received for a closed booking and refunded",
             ...(refunded ? { payment: mapPayment(refunded) } : {}),
+            newlyConfirmed: false,
           };
         }
 
@@ -179,6 +195,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
             rspCode: "00",
             message: "Payment received after expiration and refunded",
             ...(refunded ? { payment: mapPayment(refunded) } : {}),
+            newlyConfirmed: false,
           };
         }
 
