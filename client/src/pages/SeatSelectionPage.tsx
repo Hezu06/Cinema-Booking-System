@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, AlertCircle, Armchair, Sparkles, Clock, Lock } from 'lucide-react';
+import { Star, AlertCircle, Armchair, Sparkles, Clock, Lock, X } from 'lucide-react';
 import type { Showtime, ShowtimeSeat } from '../types';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -160,6 +160,15 @@ export const SeatSelectionPage: React.FC = () => {
     };
   }, [showtimeId, user]);
 
+  // Auto-dismiss transient error after 5 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   // Countdown timer for active user hold
   useEffect(() => {
     if (!userHoldExpiresAt) return;
@@ -170,6 +179,9 @@ export const SeatSelectionPage: React.FC = () => {
 
       if (diff === 0) {
         setUserHoldExpiresAt(null);
+        setSelectedSeatIds([]);
+        sessionStorage.removeItem('ticketor_pending_booking_id');
+        sessionStorage.removeItem('ticketor_booking_draft');
         setError('Thời gian giữ ghế đã hết hạn. Ghế đã được tự động mở lại.');
         fetchShowtimeAndSeats();
         clearInterval(interval);
@@ -288,6 +300,7 @@ export const SeatSelectionPage: React.FC = () => {
       setSelectedSeatIds([]);
       setUserHoldExpiresAt(null);
       setRemainingSeconds(0);
+      setError(null);
       fetchShowtimeAndSeats();
     } catch (err) {
       console.error('Failed to release hold:', err);
@@ -479,9 +492,19 @@ export const SeatSelectionPage: React.FC = () => {
 
       {error && (
         <div className="max-w-4xl mx-auto px-4 mt-6">
-          <div className="flex items-center gap-2 p-3 text-xs text-red-400 bg-red-950/30 border border-red-800/50 rounded-xl">
-            <AlertCircle size={16} className="shrink-0" />
-            <span>{error}</span>
+          <div className="flex items-center justify-between gap-2 p-3 text-xs text-red-400 bg-red-950/30 border border-red-800/50 rounded-xl transition-all">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="p-1 text-red-400 hover:text-red-200 hover:bg-red-900/30 rounded-lg transition-colors shrink-0"
+              title="Đóng thông báo"
+            >
+              <X size={14} />
+            </button>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Star, Eye, EyeOff, AlertCircle, Armchair, Clock, AlertTriangle } from 'lucide-react';
+import { Star, Eye, EyeOff, AlertCircle, Armchair, Clock, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BookingStepper } from '../components/booking/BookingStepper';
@@ -87,6 +87,15 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [location, navigate]);
 
+  // Auto-dismiss transient error after 5 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   // Active countdown timer
   useEffect(() => {
     if (!holdExpiresAt) return;
@@ -97,6 +106,8 @@ export const CheckoutPage: React.FC = () => {
 
       if (diff <= 0) {
         setIsExpired(true);
+        sessionStorage.removeItem('ticketor_booking_draft');
+        sessionStorage.removeItem('ticketor_pending_booking_id');
         clearInterval(interval);
       }
     }, 1000);
@@ -116,6 +127,7 @@ export const CheckoutPage: React.FC = () => {
 
   const handleReturnToSeats = () => {
     sessionStorage.removeItem('ticketor_booking_draft');
+    sessionStorage.removeItem('ticketor_pending_booking_id');
     if (showtime?.id) {
       navigate(`/booking/${showtime.id}`);
     } else {
@@ -302,9 +314,19 @@ export const CheckoutPage: React.FC = () => {
 
       {error && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
-          <div className="flex items-center gap-2 p-3 text-xs text-red-400 bg-red-950/30 border border-red-800/50 rounded-xl">
-            <AlertCircle size={16} className="shrink-0" />
-            <span>{error}</span>
+          <div className="flex items-center justify-between gap-2 p-3 text-xs text-red-400 bg-red-950/30 border border-red-800/50 rounded-xl transition-all">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="p-1 text-red-400 hover:text-red-200 hover:bg-red-900/30 rounded-lg transition-colors shrink-0"
+              title="Đóng thông báo"
+            >
+              <X size={14} />
+            </button>
           </div>
         </div>
       )}
