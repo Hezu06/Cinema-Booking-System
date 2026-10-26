@@ -1,15 +1,5 @@
 import { Router } from "express";
-import {
-    getMe,
-    login,
-    register,
-    googleAuth,
-    verifyEmail,
-    resendVerification,
-    forgotPassword,
-    resetPassword,
-    changePassword,
-} from "../controllers/auth.controller.js";
+import { container } from "../../config/container.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { validateBody } from "../middlewares/validate.middleware.js";
 import {
@@ -25,15 +15,15 @@ import {
 
 const authRouter = Router();
 
-authRouter.post("/register", validateBody(registerSchema), register);
-authRouter.post("/login", validateBody(loginSchema), login);
-authRouter.post("/google", validateBody(googleAuthSchema), googleAuth);
-authRouter.post("/verify-email", validateBody(verifyEmailSchema), verifyEmail);
-authRouter.post("/resend-verification", validateBody(resendVerificationSchema), resendVerification);
-authRouter.post("/forgot-password", validateBody(forgotPasswordSchema), forgotPassword);
-authRouter.post("/reset-password", validateBody(resetPasswordSchema), resetPassword);
-authRouter.put("/change-password", authMiddleware, validateBody(changePasswordSchema), changePassword);
-authRouter.get("/me", authMiddleware, getMe);
+authRouter.post("/register", validateBody(registerSchema), container.authController.register);
+authRouter.post("/login", validateBody(loginSchema), container.authController.login);
+authRouter.post("/google", validateBody(googleAuthSchema), container.authController.googleAuth);
+authRouter.post("/verify-email", validateBody(verifyEmailSchema), container.authController.verifyEmail);
+authRouter.post("/resend-verification", validateBody(resendVerificationSchema), container.authController.resendVerification);
+authRouter.post("/forgot-password", validateBody(forgotPasswordSchema), container.authController.forgotPassword);
+authRouter.post("/reset-password", validateBody(resetPasswordSchema), container.authController.resetPassword);
+authRouter.put("/change-password", authMiddleware, validateBody(changePasswordSchema), container.authController.changePassword);
+authRouter.get("/me", authMiddleware, container.authController.getMe);
 authRouter.get("/protected", authMiddleware, (req, res) => {
     res.json({
         success: true,

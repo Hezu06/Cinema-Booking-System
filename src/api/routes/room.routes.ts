@@ -1,33 +1,8 @@
 import express from "express";
-
-import {
-  RoomController,
-} from "../controllers/room.controller.js";
-
-import {
-  RoomService,
-} from "../../business/services/room.service.js";
-
-import {
-  PrismaRoomRepository,
-} from "../../data-access/repositories/room.repository.js";
-
-import {
-  PrismaCinemaRepository,
-} from "../../data-access/repositories/cinema.repository.js";
-
-import {
-  authMiddleware,
-} from "../middlewares/auth.middleware.js";
-
-import {
-  requireAdmin,
-} from "../middlewares/role.middleware.js";
-
-import {
-  validateRequest,
-} from "../middlewares/validate.middleware.js";
-
+import { container } from "../../config/container.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { requireAdmin } from "../middlewares/role.middleware.js";
+import { validateRequest } from "../middlewares/validate.middleware.js";
 import {
   createRoomSchema,
   updateRoomSchema,
@@ -36,50 +11,29 @@ import {
 
 const roomRouter = express.Router();
 
-const roomRepository =
-  new PrismaRoomRepository();
-
-const cinemaRepository =
-  new PrismaCinemaRepository();
-
-const roomService = new RoomService(
-  roomRepository,
-  cinemaRepository,
-);
-
-const roomController =
-  new RoomController(roomService);
-
 // UC-12: Room management is Admin-only.
 roomRouter.use(authMiddleware, requireAdmin);
 
-roomRouter.get(
-  "/",
-  roomController.getAllRooms,
-);
-
+roomRouter.get("/", container.roomController.getAllRooms);
 roomRouter.get(
   "/:id",
   validateRequest({ params: roomIdParamSchema }),
-  roomController.getRoomById,
+  container.roomController.getRoomById
 );
-
 roomRouter.post(
   "/",
   validateRequest({ body: createRoomSchema }),
-  roomController.createRoom,
+  container.roomController.createRoom
 );
-
 roomRouter.put(
   "/:id",
   validateRequest({ params: roomIdParamSchema, body: updateRoomSchema }),
-  roomController.updateRoom,
+  container.roomController.updateRoom
 );
-
 roomRouter.delete(
   "/:id",
   validateRequest({ params: roomIdParamSchema }),
-  roomController.deleteRoom,
+  container.roomController.deleteRoom
 );
 
 export default roomRouter;
