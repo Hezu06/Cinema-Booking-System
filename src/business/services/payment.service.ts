@@ -136,7 +136,7 @@ export class PaymentService {
     if (!this.bookingRepository || !this.emailService) return;
     try {
       const booking = await this.bookingRepository.findById(bookingId);
-      if (!booking || !booking.user?.email) return;
+      if (!booking || booking.status !== "CONFIRMED" || !booking.user?.email) return;
 
       const seatLabels = booking.bookingSeats
         .map((bs) => `${bs.seat.rowLabel}${bs.seat.seatNumber}`)
