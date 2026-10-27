@@ -49,6 +49,7 @@ import { SeatController } from "../api/controllers/seat.controller.js";
 import { ShowtimeController } from "../api/controllers/showtime.controller.js";
 import { BookingController } from "../api/controllers/booking.controller.js";
 import { PaymentController } from "../api/controllers/payment.controller.js";
+import { BookingExpirationWorker } from "../infrastructure/workers/booking-expiration.worker.js";
 
 export interface ContainerOverrides {
   // Repositories
@@ -76,6 +77,7 @@ export interface ContainerOverrides {
   showtimeService?: ShowtimeService;
   bookingService?: BookingService;
   paymentService?: PaymentService;
+  bookingExpirationWorker?: BookingExpirationWorker;
 }
 
 /**
@@ -119,6 +121,9 @@ export class Container {
   readonly showtimeController: ShowtimeController;
   readonly bookingController: BookingController;
   readonly paymentController: PaymentController;
+
+  // 5. Background Workers
+  readonly bookingExpirationWorker: BookingExpirationWorker;
 
   constructor(overrides: ContainerOverrides = {}) {
     // 1. Initialize Repositories
@@ -192,6 +197,10 @@ export class Container {
     this.showtimeController = new ShowtimeController(this.showtimeService);
     this.bookingController = new BookingController(this.bookingService);
     this.paymentController = new PaymentController(this.paymentService);
+
+    // 5. Initialize Background Workers
+    this.bookingExpirationWorker =
+      overrides.bookingExpirationWorker ?? new BookingExpirationWorker();
   }
 }
 
