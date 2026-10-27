@@ -49,7 +49,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ movie, rank }) => {
         {/* Hover overlay CTA */}
         <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
           <span className="w-full py-2 bg-[#FCFC65] hover:bg-[#EAEA48] text-[#0B0B0E] font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-neon">
-            Get Ticket
+            Đặt vé ngay
           </span>
         </div>
       </div>

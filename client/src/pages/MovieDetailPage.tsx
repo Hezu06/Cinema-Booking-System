@@ -41,13 +41,13 @@ export const MovieDetailPage: React.FC = () => {
   if (!movie) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-24 text-center">
-        <h2 className="text-2xl font-bold text-white mb-4">Movie not found</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Không tìm thấy thông tin phim</h2>
         <Link
           to="/"
           className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#FCFC65] text-[#08080C] font-bold rounded-xl text-xs"
         >
           <ChevronLeft size={16} />
-          <span>Back to Home</span>
+          <span>Quay lại trang chủ</span>
         </Link>
       </div>
     );
@@ -401,7 +401,7 @@ export const MovieDetailPage: React.FC = () => {
               className="w-full py-3.5 px-6 rounded-xl bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-sm flex items-center justify-center gap-2 shadow-neon transition transform hover:scale-105 active:scale-95"
             >
               <Ticket size={18} />
-              <span>Get Ticket</span>
+              <span>Đặt vé ngay</span>
             </button>
 
             <button
@@ -413,7 +413,7 @@ export const MovieDetailPage: React.FC = () => {
               }`}
             >
               <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-              <span>{isFavorite ? 'In Favorites' : 'Add to Favorites'}</span>
+              <span>{isFavorite ? 'Đã lưu yêu thích' : 'Thêm vào yêu thích'}</span>
             </button>
           </div>
         </div>
@@ -422,9 +422,9 @@ export const MovieDetailPage: React.FC = () => {
       {/* Cast Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-10 pb-10 border-b border-[#20202E]">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Cast</h2>
+          <h2 className="text-xl font-bold text-white">Diễn viên & Đạo diễn</h2>
           <button className="text-xs font-semibold text-[#8E8E9E] hover:text-[#FCFC65] transition-colors">
-            View All &gt;
+            Xem tất cả &gt;
           </button>
         </div>
 
@@ -444,9 +444,9 @@ export const MovieDetailPage: React.FC = () => {
       {/* User Reviews Section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-10 space-y-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">User Reviews</h2>
+          <h2 className="text-xl font-bold text-white">Đánh giá từ khán giả</h2>
           <button className="text-xs font-semibold text-[#8E8E9E] hover:text-[#FCFC65] transition-colors">
-            View All &gt;
+            Xem tất cả &gt;
           </button>
         </div>
 
@@ -458,35 +458,35 @@ export const MovieDetailPage: React.FC = () => {
               7.5
             </div>
             <div>
-              <div className="text-xs text-[#8E8E9E]">User Score</div>
-              <div className="text-base sm:text-lg font-bold text-white">Generally Favorable</div>
+              <div className="text-xs text-[#8E8E9E]">Điểm Đánh Giá</div>
+              <div className="text-base sm:text-lg font-bold text-white">Được Đánh Giá Cao</div>
             </div>
           </div>
 
           {/* Sentiment Distribution Bars */}
           <div className="flex-1 w-full space-y-2.5 text-xs">
             <div className="flex items-center gap-3">
-              <span className="w-16 text-[#A0A0B2] text-right">Positive</span>
+              <span className="w-16 text-[#A0A0B2] text-right">Tích cực</span>
               <div className="flex-1 h-2 rounded-full bg-[#1A1A24] overflow-hidden">
                 <div className="h-full bg-[#74CFCF] rounded-full" style={{ width: '73%' }} />
               </div>
-              <span className="w-24 text-[11px] text-[#8E8E9E]">125 Ratings (73%)</span>
+              <span className="w-24 text-[11px] text-[#8E8E9E]">125 đánh giá (73%)</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-16 text-[#A0A0B2] text-right">Average</span>
+              <span className="w-16 text-[#A0A0B2] text-right">Trung bình</span>
               <div className="flex-1 h-2 rounded-full bg-[#1A1A24] overflow-hidden">
                 <div className="h-full bg-[#FCFC65] rounded-full" style={{ width: '15%' }} />
               </div>
-              <span className="w-24 text-[11px] text-[#8E8E9E]">27 Ratings (15%)</span>
+              <span className="w-24 text-[11px] text-[#8E8E9E]">27 đánh giá (15%)</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-16 text-[#A0A0B2] text-right">Negative</span>
+              <span className="w-16 text-[#A0A0B2] text-right">Trái chiều</span>
               <div className="flex-1 h-2 rounded-full bg-[#1A1A24] overflow-hidden">
                 <div className="h-full bg-[#FF5E5E] rounded-full" style={{ width: '7%' }} />
               </div>
-              <span className="w-24 text-[11px] text-[#8E8E9E]">16 Ratings (7%)</span>
+              <span className="w-24 text-[11px] text-[#8E8E9E]">16 đánh giá (7%)</span>
             </div>
           </div>
         </div>
@@ -504,12 +504,12 @@ export const MovieDetailPage: React.FC = () => {
               }`}
             >
               {tab === 'ALL'
-                ? 'All Reviews'
+                ? 'Tất cả đánh giá'
                 : tab === 'POSITIVE'
-                ? 'Positive Reviews'
+                ? 'Đánh giá tích cực'
                 : tab === 'AVERAGE'
-                ? 'Average Reviews'
-                : 'Negative Reviews'}
+                ? 'Đánh giá trung bình'
+                : 'Đánh giá trái chiều'}
             </button>
           ))}
         </div>
@@ -544,7 +544,7 @@ export const MovieDetailPage: React.FC = () => {
 
               <div className="pt-2 text-right">
                 <button className="text-[11px] text-[#8E8E9E] hover:text-white inline-flex items-center gap-1 font-medium">
-                  <span>Full Review</span>
+                  <span>Xem chi tiết</span>
                   <ExternalLink size={12} />
                 </button>
               </div>
@@ -555,7 +555,7 @@ export const MovieDetailPage: React.FC = () => {
         {/* Load more button */}
         <div className="text-center pt-4">
           <button className="px-6 py-2.5 rounded-full border border-[#2E2E3E] text-xs font-semibold text-[#A0A0B2] hover:text-white hover:border-white transition-colors">
-            119 more reviews
+            Xem thêm các đánh giá khác
           </button>
         </div>
       </div>
