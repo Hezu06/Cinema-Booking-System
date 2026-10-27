@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Star, Eye, EyeOff, AlertCircle, Armchair, Clock, AlertTriangle, X } from 'lucide-react';
+import { Star, AlertCircle, Armchair, Clock, AlertTriangle, X, ShieldCheck, QrCode, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { BookingStepper } from '../components/booking/BookingStepper';
@@ -11,15 +11,7 @@ export const CheckoutPage: React.FC = () => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
 
   const [bookingDraft, setBookingDraft] = useState<any>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOMO' | 'VNPAY' | 'ZALOPAY' | 'APPLE'>('VNPAY');
-
-  // Card form state matching Figma
-  const [cardNumber, setCardNumber] = useState('9704 2201 8492 5618');
-  const [showCardNumber, setShowCardNumber] = useState(false);
-  const [expMonth, setExpMonth] = useState('12');
-  const [expYear, setExpYear] = useState('2028');
-  const [cvv, setCvv] = useState('888');
-  const [cardHolder, setCardHolder] = useState('NGUYEN VAN A');
+  const [paymentMethod] = useState<'VNPAY'>('VNPAY');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -400,123 +392,62 @@ export const CheckoutPage: React.FC = () => {
 
           {/* 2. CENTER COLUMN: Method of Payment & Details */}
           <div className="lg:col-span-6 bg-[#101016] border border-[#1E1E2A] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-            <h3 className="font-bold text-white text-base">Phương thức thanh toán</h3>
-
-            {/* Payment Method Radio Options */}
-            <div className="space-y-3">
-              {[
-                { id: 'VNPAY', label: 'VNPAY Sandbox (không trừ tiền thật)' },
-              ].map((opt) => (
-                <label
-                  key={opt.id}
-                  onClick={() => setPaymentMethod(opt.id as any)}
-                  className="flex items-center gap-3 cursor-pointer py-2 px-3.5 rounded-xl border border-[#1F1F2B] hover:border-[#353545] bg-[#14141E] transition text-xs text-[#BCBCC8] hover:text-white"
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition shrink-0 ${
-                      paymentMethod === opt.id
-                        ? 'border-[#FCFC65] bg-[#FCFC65]'
-                        : 'border-[#404055] bg-transparent'
-                    }`}
-                  >
-                    {paymentMethod === opt.id && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#08080C]" />
-                    )}
-                  </div>
-                  <span className={paymentMethod === opt.id ? 'font-bold text-white' : ''}>
-                    {opt.label}
-                  </span>
-                </label>
-              ))}
+            <div>
+              <h3 className="font-bold text-white text-base">Phương thức thanh toán</h3>
+              <p className="text-xs text-[#8E8E9E] mt-1">
+                Lựa chọn phương thức thanh toán an toàn được bảo vệ bởi chuẩn mã hóa giao dịch 256-bit.
+              </p>
             </div>
 
-            {/* If Card Payment: Figma form */}
-            {paymentMethod === 'CARD' && (
-              <div className="space-y-4 pt-2 border-t border-[#1C1C26]">
-                <div className="text-xs text-[#8E8E9E]">Thông tin thẻ ngân hàng:</div>
-                {/* Card Number */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] text-[#8E8E9E]">Số thẻ (Card Number)</label>
-                  <div className="relative">
-                    <input
-                      type={showCardNumber ? 'text' : 'password'}
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full bg-[#161622] border border-[#282838] rounded-xl px-4 py-2.5 text-xs text-white tracking-widest focus:outline-none focus:border-[#FCFC65]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCardNumber(!showCardNumber)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#707085] hover:text-white"
-                    >
-                      {showCardNumber ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
+            {/* Official VNPAY Selection Card */}
+            <div className="p-5 rounded-2xl bg-[#14141E] border-2 border-[#FCFC65]/80 space-y-4 shadow-lg shadow-black/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border border-[#FCFC65] bg-[#FCFC65] flex items-center justify-center shrink-0">
+                    <div className="w-2 h-2 rounded-full bg-[#08080C]" />
                   </div>
-                </div>
-
-                {/* Card Holder */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] text-[#8E8E9E]">Tên chủ thẻ (Cardholder Name)</label>
-                  <input
-                    type="text"
-                    value={cardHolder}
-                    onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                    className="w-full bg-[#161622] border border-[#282838] rounded-xl px-4 py-2.5 text-xs text-white uppercase focus:outline-none focus:border-[#FCFC65]"
-                  />
-                </div>
-
-                {/* Exp Month & Exp Year & CVV */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] text-[#8E8E9E]">Tháng hết hạn</label>
-                    <input
-                      type="text"
-                      maxLength={2}
-                      value={expMonth}
-                      onChange={(e) => setExpMonth(e.target.value)}
-                      className="w-full bg-[#161622] border border-[#282838] rounded-xl px-3 py-2.5 text-xs text-white text-center focus:outline-none focus:border-[#FCFC65]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] text-[#8E8E9E]">Năm hết hạn</label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      value={expYear}
-                      onChange={(e) => setExpYear(e.target.value)}
-                      className="w-full bg-[#161622] border border-[#282838] rounded-xl px-3 py-2.5 text-xs text-white text-center focus:outline-none focus:border-[#FCFC65]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] text-[#8E8E9E]">CVV / CVC</label>
-                    <input
-                      type="password"
-                      maxLength={4}
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value)}
-                      className="w-full bg-[#161622] border border-[#282838] rounded-xl px-3 py-2.5 text-xs text-white text-center focus:outline-none focus:border-[#FCFC65]"
-                    />
+                  <div>
+                    <span className="font-bold text-white text-sm">Cổng Thanh Toán Quốc Gia VNPAY</span>
+                    <span className="ml-2 text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-[#FCFC65]/20 text-[#FCFC65] border border-[#FCFC65]/40">
+                      Sandbox Thử Nghiệm
+                    </span>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* If E-Wallet (MoMo, VNPay, ZaloPay): Instant QR info */}
-            {paymentMethod !== 'CARD' && (
-              <div className="p-4 bg-[#14141E] border border-[#222230] rounded-2xl flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#FCFC65]/10 border border-[#FCFC65]/30 flex items-center justify-center shrink-0 text-[#FCFC65] font-black text-sm">
-                  QR
+              <p className="text-xs text-[#A0A0B2] leading-relaxed pl-8">
+                Hệ thống kết nối trực tiếp với VNPAY Sandbox để xử lý thanh toán mô phỏng (không trừ tiền thật). Sau khi thanh toán, mã vé sẽ tự động được cấp ngay tức thì.
+              </p>
+
+              {/* Supported payment channels */}
+              <div className="pl-8 grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="p-2.5 rounded-xl bg-[#1A1A26] border border-[#2A2A3C] flex items-center gap-2">
+                  <QrCode size={16} className="text-[#FCFC65] shrink-0" />
+                  <span className="text-[11px] text-white font-medium">VNPAY-QR</span>
                 </div>
-                <div className="text-xs text-[#A0A0B0]">
-                  <p className="font-semibold text-white">Thanh toán thử nghiệm qua VNPAY Sandbox</p>
-                  <p className="text-[11px] text-[#707085] mt-0.5">
-                    Bạn sẽ được chuyển sang cổng VNPAY Sandbox. Không có tiền thật bị trừ; vé chỉ được tạo sau khi callback thanh toán thành công.
-                  </p>
+                <div className="p-2.5 rounded-xl bg-[#1A1A26] border border-[#2A2A3C] flex items-center gap-2">
+                  <CreditCard size={16} className="text-[#74CFCF] shrink-0" />
+                  <span className="text-[11px] text-white font-medium">Thẻ ATM / 40+ Ngân Hàng</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#1A1A26] border border-[#2A2A3C] flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+                  <span className="text-[11px] text-white font-medium">Visa · Master · JCB</span>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Guide & Instructions Box */}
+            <div className="p-4 rounded-2xl bg-[#0D0D14] border border-[#242434] space-y-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                <ShieldCheck size={16} className="text-[#FCFC65]" />
+                <span>Quy trình thanh toán & nhận vé:</span>
+              </div>
+              <ul className="space-y-2 text-xs text-[#8E8E9E] pl-6 list-disc leading-relaxed">
+                <li>Bấm nút <strong>"Thanh toán qua VNPAY Sandbox"</strong> ở cột bên phải để chuyển sang cổng thanh toán.</li>
+                <li>Quét mã QR bằng ứng dụng ngân hàng hoặc sử dụng thông tin thẻ test có sẵn trên trang VNPAY.</li>
+                <li>Sau khi thanh toán hoàn tất, vé điện tử kèm mã QR sẽ hiển thị tức thì và gửi về email của bạn.</li>
+              </ul>
+            </div>
           </div>
 
           {/* 3. RIGHT COLUMN: Order Details (Figma screen 1 & 2) */}
