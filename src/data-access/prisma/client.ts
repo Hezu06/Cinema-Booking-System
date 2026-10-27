@@ -1,13 +1,17 @@
-import "dotenv/config";
-import { PrismaClient } from "../../../generated/prisma/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import "dotenv/config";
 import mariadb from "mariadb";
+import { PrismaClient } from "../../../generated/prisma/client.js";
 
 function createMariaDbAdapter(): PrismaMariaDb {
     const connectionUrl = process.env.DATABASE_URL;
 
     if (connectionUrl) {
         const url = new URL(connectionUrl);
+
+        const requiresSsl =
+            url.searchParams.has("ssl") || url.searchParams.has("sslaccept") || url.hostname.includes("tidbcloud.com");
+
         const pool = mariadb.createPool({
             host: url.hostname,
             port: Number(url.port || 3306),
@@ -19,6 +23,7 @@ function createMariaDbAdapter(): PrismaMariaDb {
             connectTimeout: 15_000,
             acquireTimeout: 30_000,
             prepareCacheLength: 0,
+            ...(requiresSsl ? { ssl: { rejectUnauthorized: true } } : {}),
         });
 
         return new PrismaMariaDb(pool, {
