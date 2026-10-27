@@ -42,9 +42,7 @@ export const Navbar: React.FC = () => {
                 ? 'text-[#FCFC65] font-bold'
                 : 'text-[#8E8E9E] hover:text-white'
             }`}
-          >
-            Movies
-          </Link>
+          >Phim</Link>
           <Link
             to="/#cinemas"
             onClick={() => {
@@ -60,9 +58,7 @@ export const Navbar: React.FC = () => {
                 ? 'text-[#FCFC65] font-bold'
                 : 'text-[#8E8E9E] hover:text-white'
             }`}
-          >
-            Cinemas
-          </Link>
+          >Cụm rạp</Link>
         </nav>
 
         {/* Right: Actions */}
@@ -76,7 +72,7 @@ export const Navbar: React.FC = () => {
                   autoFocus
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search movies..."
+                  placeholder="Tìm kiếm phim..."
                   className="bg-[#181822] text-xs text-white border border-[#353545] rounded-full pl-3 pr-8 py-1.5 focus:outline-none focus:border-[#FCFC65] w-36 sm:w-48 transition-all"
                   onBlur={() => !searchQuery && setSearchOpen(false)}
                 />
@@ -157,7 +153,7 @@ export const Navbar: React.FC = () => {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-gray-300 hover:text-white hover:bg-[#1A1A24] transition-colors"
                     >
                       <User size={15} />
-                      <span>My Profile</span>
+                      <span>Hồ sơ cá nhân</span>
                     </Link>
 
                     <Link
@@ -166,7 +162,7 @@ export const Navbar: React.FC = () => {
                       className="flex items-center gap-2.5 px-4 py-2.5 text-gray-300 hover:text-white hover:bg-[#1A1A24] transition-colors"
                     >
                       <Ticket size={15} className="text-[#FCFC65]" />
-                      <span>My Tickets</span>
+                      <span>Vé của tôi</span>
                     </Link>
 
                     <button
@@ -177,7 +173,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-red-400 hover:bg-red-500/10 transition-colors border-t border-[#22222E] mt-1"
                     >
                       <LogOut size={15} />
-                      <span>Sign Out</span>
+                      <span>Đăng xuất</span>
                     </button>
                   </div>
                 </>
@@ -191,7 +187,7 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-1.5 text-xs font-medium text-[#D1D1DE] hover:text-white transition-colors"
               >
                 <LogIn size={14} className="text-[#8E8E9E]" />
-                <span>login</span>
+                <span>Đăng nhập</span>
               </button>
 
               <button
@@ -199,7 +195,7 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-1.5 text-xs font-semibold text-[#0B0B0E] bg-[#FCFC65] hover:bg-[#EAEA48] px-3.5 py-1.5 rounded-full transition-all shadow-sm"
               >
                 <UserPlus size={14} />
-                <span>Sign Up</span>
+                <span>Đăng ký</span>
               </button>
             </div>
           )}

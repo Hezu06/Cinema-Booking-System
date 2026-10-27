@@ -284,8 +284,8 @@ export const HomePage: React.FC = () => {
               <div className="text-xs text-[#8E8E9E] mt-1">Cụm Rạp Toàn Quốc</div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#FCFC65]">40</div>
-              <div className="text-xs text-[#8E8E9E] mt-1">Ghế / Khán Phòng</div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#FCFC65]">100%</div>
+              <div className="text-xs text-[#8E8E9E] mt-1">Giữ Ghế Online</div>
             </div>
           </div>
         </div>
@@ -296,11 +296,9 @@ export const HomePage: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 flex items-center justify-center gap-2 text-[#C4C4D2]">
           <Sparkles size={16} className="text-[#FCFC65]" />
           <span>
-            Special Offer: <span className="font-semibold text-white">Buy 2 Tickets, Get 1 FREE!</span> Valid This Weekend Only.
+            Ưu đãi đặc biệt: <span className="font-semibold text-white">Mua 2 vé tặng 1 phần bắp nước!</span> Áp dụng cuối tuần này.
           </span>
-          <a href="#currently-in-cinemas" className="text-[#FCFC65] hover:underline font-semibold ml-2">
-            Learn More
-          </a>
+          <a href="#currently-in-cinemas" className="text-[#FCFC65] hover:underline font-semibold ml-2">Khám phá ngay</a>
         </div>
       </section>
 
@@ -310,16 +308,16 @@ export const HomePage: React.FC = () => {
         <section id="currently-in-cinemas" className="space-y-6">
           <div className="flex items-end justify-between">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Currently In Cinemas</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Phim Đang Chiếu</h2>
               <p className="text-xs sm:text-sm text-[#8E8E9E] mt-1">
-                Discover The Latest Movies Now Playing in Cinemas – Book Your Tickets Today!
+                Khám phá các bộ phim bom tấn mới nhất đang chiếu tại rạp – Đặt vé giữ chỗ ngay!
               </p>
             </div>
             <Link
               to="/?status=NOW_SHOWING"
               className="hidden sm:flex items-center gap-1 text-xs font-semibold text-[#8E8E9E] hover:text-[#FCFC65] transition-colors"
             >
-              <span>View All</span>
+              <span>Xem tất cả</span>
               <ChevronRight size={14} />
             </Link>
           </div>
@@ -343,16 +341,16 @@ export const HomePage: React.FC = () => {
         <section className="space-y-6">
           <div className="flex items-end justify-between">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Top 10 Movies This Week</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Top Phim Hot Trong Tuần</h2>
               <p className="text-xs sm:text-sm text-[#8E8E9E] mt-1">
-                Hot This Week: Top Movies And Where To Watch Them.
+                Những bộ phim được yêu thích nhất và lịch chiếu tại các cụm rạp.
               </p>
             </div>
             <Link
               to="/?sort=top_rated"
               className="hidden sm:flex items-center gap-1 text-xs font-semibold text-[#8E8E9E] hover:text-[#FCFC65] transition-colors"
             >
-              <span>View All</span>
+              <span>Xem tất cả</span>
               <ChevronRight size={14} />
             </Link>
           </div>
@@ -368,15 +366,15 @@ export const HomePage: React.FC = () => {
         <section className="space-y-6">
           <div className="text-center max-w-xl mx-auto space-y-1">
             <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-white">
-              Now Showing With Festivals, Screenings and Special Offers
+              Suất Chiếu Đặc Biệt & Ưu Đãi Điện Ảnh
             </h2>
             <p className="text-xs sm:text-sm text-[#8E8E9E]">
-              Unique Film Events And Limited-Time Offers – Don't Miss What's Coming Next.
+              Các sự kiện chiếu phim giới hạn và khuyến mãi hấp dẫn không thể bỏ lỡ.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-            {/* Promo Card 1: Horror Film Festival */}
+            {/* Promo Card 1: Tuần Lễ Phim Bom Tấn & Trải Nghiệm IMAX */}
             <div className="relative rounded-3xl overflow-hidden border border-[#252535] bg-[#12121A] p-8 flex flex-col justify-between min-h-[260px] group">
               <div
                 className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-500"
@@ -388,11 +386,9 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="relative z-10 space-y-2">
-                <span className="inline-block px-3 py-1 rounded-full border border-[#FCFC65] text-[#FCFC65] text-[11px] font-bold uppercase tracking-wider">
-                  Special Event
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-white">Horror Film Festival</h3>
-                <p className="text-xs text-[#9E9EB2]">Spine-Chilling Classics & Midnight Screenings</p>
+                <span className="inline-block px-3 py-1 rounded-full border border-[#FCFC65] text-[#FCFC65] text-[11px] font-bold uppercase tracking-wider">Sự Kiện Đặc Biệt</span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">Tuần Lễ Phim Bom Tấn & Trải Nghiệm IMAX</h3>
+                <p className="text-xs text-[#9E9EB2]">Suất chiếu đặc biệt cùng hệ thống âm thanh Dolby Atmos đỉnh cao</p>
               </div>
 
               <div className="relative z-10 pt-6">
@@ -400,13 +396,13 @@ export const HomePage: React.FC = () => {
                   to="/"
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs shadow-neon transition-all"
                 >
-                  <span>Learn More</span>
+                  <span>Khám phá ngay</span>
                   <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
 
-            {/* Promo Card 2: Student Discount */}
+            {/* Promo Card 2: Ưu Đãi Học Sinh - Sinh Viên */}
             <div className="relative rounded-3xl overflow-hidden border border-[#252535] bg-[#12121A] p-8 flex flex-col justify-between min-h-[260px] group">
               <div
                 className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-500"
@@ -418,12 +414,10 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="relative z-10 space-y-2">
-                <span className="inline-block px-3 py-1 rounded-full border border-[#FCFC65] text-[#FCFC65] text-[11px] font-bold uppercase tracking-wider">
-                  Limit Time
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-black text-white">Student Discount</h3>
+                <span className="inline-block px-3 py-1 rounded-full border border-[#FCFC65] text-[#FCFC65] text-[11px] font-bold uppercase tracking-wider">Ưu Đãi Có Hạn</span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">Ưu Đãi Học Sinh - Sinh Viên</h3>
                 <p className="text-xs text-[#9E9EB2]">
-                  <strong className="text-[#FCFC65]">50% Off</strong> All Weekday Matinee Shows
+                  Đồng giá vé chỉ từ <strong className="text-[#FCFC65]">55.000 đ</strong> cho suất chiếu ngày thường
                 </p>
               </div>
 
@@ -432,7 +426,7 @@ export const HomePage: React.FC = () => {
                   to="/"
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs shadow-neon transition-all"
                 >
-                  <span>Learn More</span>
+                  <span>Khám phá ngay</span>
                   <ArrowRight size={14} />
                 </Link>
               </div>
@@ -444,14 +438,14 @@ export const HomePage: React.FC = () => {
         <section className="space-y-6">
           <div className="flex items-end justify-between">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Coming Soon</h2>
-              <p className="text-xs sm:text-sm text-[#8E8E9E] mt-1">Get Ready For These Upcoming Releases</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Phim Sắp Chiếu</h2>
+              <p className="text-xs sm:text-sm text-[#8E8E9E] mt-1">Đón chờ những siêu phẩm điện ảnh sắp đổ bộ phòng vé</p>
             </div>
             <Link
               to="/?status=COMING_SOON"
               className="hidden sm:flex items-center gap-1 text-xs font-semibold text-[#8E8E9E] hover:text-[#FCFC65] transition-colors"
             >
-              <span>View All</span>
+              <span>Xem tất cả</span>
               <ChevronRight size={14} />
             </Link>
           </div>
@@ -523,25 +517,22 @@ export const HomePage: React.FC = () => {
             {/* Right Text */}
             <div className="space-y-5">
               <h3 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
-                Book Tickets To Your <br />
-                Favorite Movies Online
+                Đặt Vé Xem Phim Online <br /> Nhanh Chóng & Tiện Lợi
               </h3>
               <p className="text-xs sm:text-sm text-[#8E8E9E] leading-relaxed">
-                Get A Sneak Peek At The Most Popular Current Movie Trailers And Be The First To Know About The Hottest Upcoming Releases. Enjoy seamless mobile check-ins and concession ordering.
+                Cập nhật trailer phim hot nhất, giữ chỗ ngồi ưng ý trong thời gian thực và nhận vé điện tử kèm mã QR vào thẳng phòng chiếu không cần xếp hàng.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <a
                   href="#currently-in-cinemas"
                   className="bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-neon transition"
                 >
-                  Book Movie Ticket
+                  Đặt vé ngay
                 </a>
                 <a
                   href="#about"
                   className="bg-transparent hover:bg-white/5 border border-[#353545] text-white font-medium text-xs sm:text-sm px-6 py-3 rounded-xl transition"
-                >
-                  Learn More
-                </a>
+                >Tìm hiểu thêm</a>
               </div>
             </div>
           </div>
@@ -575,10 +566,10 @@ export const HomePage: React.FC = () => {
                   </div>
                   <div className="font-bold text-white text-base">Sọt phim Mobile</div>
                   <p className="text-[11px] text-[#8E8E9E]">
-                    Scan QR codes at turnstiles, choose recliners, and preorder food in seconds.
+                    Quét mã QR tại cửa rạp, chọn ghế ngồi êm ái và nhận ưu đãi độc quyền.
                   </p>
                   <div className="w-full py-2 bg-[#FCFC65] text-[#08080C] font-bold text-xs rounded-xl shadow-neon">
-                    Quick Booking
+                    Đặt vé siêu tốc
                   </div>
                 </div>
 
@@ -590,11 +581,10 @@ export const HomePage: React.FC = () => {
             {/* Content */}
             <div className="space-y-6">
               <h3 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
-                Enjoy Sọt phim Mobile <br />
-                App Experience
+                Trải Nghiệm Điện Ảnh Đỉnh Cao <br /> Cùng Ứng Dụng Sọt Phim
               </h3>
               <p className="text-xs sm:text-sm text-[#8E8E9E] leading-relaxed">
-                Watch trailers on the go, receive notifications when advance tickets go live for midnight premieres, and download tickets directly to your Apple Wallet or Google Pay.
+                Xem trailer mượt mà, nhận thông báo mở bán vé cho các suất chiếu sớm và quản lý vé điện tử trực tiếp trên điện thoại.
               </p>
 
               {/* Store Badges */}
@@ -602,7 +592,7 @@ export const HomePage: React.FC = () => {
                 <button className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-black border border-[#353545] hover:border-white transition-colors text-left">
                   <span className="text-2xl"></span>
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-[#8E8E9E]">Download on the</div>
+                    <div className="text-[9px] uppercase tracking-wider text-[#8E8E9E]">Tải trên</div>
                     <div className="text-xs font-bold text-white">App Store</div>
                   </div>
                 </button>
@@ -610,7 +600,7 @@ export const HomePage: React.FC = () => {
                 <button className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-black border border-[#353545] hover:border-white transition-colors text-left">
                   <span className="text-xl">▶</span>
                   <div>
-                    <div className="text-[9px] uppercase tracking-wider text-[#8E8E9E]">GET IT ON</div>
+                    <div className="text-[9px] uppercase tracking-wider text-[#8E8E9E]">CÓ TRÊN</div>
                     <div className="text-xs font-bold text-white">Google Play</div>
                   </div>
                 </button>
@@ -622,11 +612,9 @@ export const HomePage: React.FC = () => {
         {/* 10. HAPPY CUSTOMERS (TESTIMONIALS) */}
         <section className="space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-1">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
-              Happy Customers
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">Khán Giả Nói Gì Về Sọt Phim</h2>
             <p className="text-xs sm:text-sm text-[#8E8E9E]">
-              Hear What Our Satisfied Moviegoers Have To Say
+              Những trải nghiệm thực tế từ các tín đồ điện ảnh
             </p>
           </div>
 
@@ -668,11 +656,9 @@ export const HomePage: React.FC = () => {
         {/* 11. FAQ ACCORDION */}
         <section className="space-y-8 max-w-3xl mx-auto">
           <div className="text-center space-y-1">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
-              Frequently Asked Questions
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">Câu Hỏi Thường Gặp</h2>
             <p className="text-xs sm:text-sm text-[#8E8E9E]">
-              Find Answers To Their Most Common Questions Quickly And Easily.
+              Giải đáp nhanh các thắc mắc phổ biến của khán giả khi đặt vé.
             </p>
           </div>
 
@@ -705,26 +691,24 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="text-center pt-4 space-y-3">
-            <p className="text-xs text-[#8E8E9E]">Still Have A Question? Please contact us</p>
-            <button className="bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs px-6 py-2.5 rounded-full shadow-neon transition">
-              Contact Us
-            </button>
+            <p className="text-xs text-[#8E8E9E]">Bạn vẫn còn câu hỏi khác? Chúng tôi luôn sẵn sàng hỗ trợ</p>
+            <button className="bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs px-6 py-2.5 rounded-full shadow-neon transition">Liên hệ hỗ trợ</button>
           </div>
         </section>
 
         {/* 12. NEWSLETTER SUBSCRIPTION */}
         <section className="relative rounded-3xl border border-[#262633] bg-[#0E0E14] p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-5">
           <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Ready To Watch & Book Movies?
+            Sẵn Sàng Thưởng Thức Những Siêu Phẩm Điện Ảnh?
           </h3>
           <p className="text-xs sm:text-sm text-[#8E8E9E] max-w-md mx-auto">
-            Subscribe to our newsletter. Enter your email to create or restart your membership.
+            Đăng ký nhận bản tin để không bỏ lỡ các suất chiếu đặc biệt, ưu đãi độc quyền và gợi ý phim hay mỗi tuần.
           </p>
 
           {subscribed ? (
             <div className="flex items-center justify-center gap-2 text-sm text-[#FCFC65] font-semibold py-3">
               <CheckCircle size={18} />
-              <span>Thank you for subscribing! Check your inbox soon.</span>
+              <span>Cảm ơn bạn đã đăng ký! Hãy kiểm tra hộp thư email của bạn.</span>
             </div>
           ) : (
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
@@ -733,20 +717,18 @@ export const HomePage: React.FC = () => {
                 required
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Nhập địa chỉ email của bạn..."
                 className="w-full sm:flex-1 bg-[#181822] border border-[#353545] rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-[#606070] focus:outline-none focus:border-[#FCFC65]"
               />
               <button
                 type="submit"
                 className="w-full sm:w-auto bg-[#FCFC65] hover:bg-[#EAEA48] text-[#08080C] font-bold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-neon transition"
-              >
-                Sign Up
-              </button>
+              >Đăng Ký</button>
             </form>
           )}
 
           <p className="text-[11px] text-[#555566]">
-            By clicking Sign Up you're confirming that you agree with our Terms and Conditions.
+            Bằng việc nhấn Đăng Ký, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của Sọt Phim.
           </p>
         </section>
       </div>

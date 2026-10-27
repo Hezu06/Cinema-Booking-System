@@ -53,62 +53,56 @@ export const Footer: React.FC = () => {
             <div className="text-[11px] text-[#5A5A6E] pt-2">
               Copyright © 2026 Sọt phim. All rights reserved.
               <span className="mx-2">·</span>
-              <a href="#privacy" className="hover:text-gray-300">Privacy Policy</a>
+              <a href="#privacy" className="hover:text-gray-300">Chính Sách Bảo Mật</a>
               <span className="mx-2">·</span>
-              <a href="#terms" className="hover:text-gray-300">Terms of service</a>
+              <a href="#terms" className="hover:text-gray-300">Điều Khoản Dịch Vụ</a>
             </div>
           </div>
 
           {/* Nav Column 1: Find a Movie */}
           <div>
-            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Find a Movie</h4>
+            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Khám Phá Phim</h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <Link to="/?filter=now_showing" className="hover:text-white transition-colors">
-                  In Theaters
-                </Link>
+                <Link to="/?filter=now_showing" className="hover:text-white transition-colors">Phim Đang Chiếu</Link>
               </li>
               <li>
-                <Link to="/?filter=top_movies" className="hover:text-white transition-colors">
-                  Top Movies
-                </Link>
+                <Link to="/?filter=top_movies" className="hover:text-white transition-colors">Top Phim Hot</Link>
               </li>
               <li>
-                <Link to="/?filter=coming_soon" className="hover:text-white transition-colors">
-                  Coming Soon
-                </Link>
+                <Link to="/?filter=coming_soon" className="hover:text-white transition-colors">Phim Sắp Chiếu</Link>
               </li>
             </ul>
           </div>
 
           {/* Nav Column 2: Company */}
           <div>
-            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Company</h4>
+            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Về Sọt Phim</h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <a href="#about" className="hover:text-white transition-colors">About Us</a>
+                <a href="#about" className="hover:text-white transition-colors">Giới Thiệu</a>
               </li>
               <li>
-                <a href="#partnerships" className="hover:text-white transition-colors">Partnerships</a>
+                <a href="#partnerships" className="hover:text-white transition-colors">Hợp Tác & Rạp Chiếu</a>
               </li>
               <li>
-                <a href="#app" className="hover:text-white transition-colors">Get the App</a>
+                <a href="#app" className="hover:text-white transition-colors">Tải Ứng Dụng</a>
               </li>
             </ul>
           </div>
 
           {/* Nav Column 3: Help */}
           <div>
-            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Help</h4>
+            <h4 className="text-xs font-semibold text-white tracking-wider mb-4">Hỗ Trợ</h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <a href="#contact" className="hover:text-white transition-colors">Contact Us</a>
+                <a href="#contact" className="hover:text-white transition-colors">Liên Hệ</a>
               </li>
               <li>
-                <a href="#subscription" className="hover:text-white transition-colors">Subscription</a>
+                <a href="#subscription" className="hover:text-white transition-colors">Bản Tin Ưu Đãi</a>
               </li>
               <li>
-                <a href="#faqs" className="hover:text-white transition-colors">FAQs</a>
+                <a href="#faqs" className="hover:text-white transition-colors">Câu Hỏi Thường Gặp</a>
               </li>
             </ul>
           </div>
