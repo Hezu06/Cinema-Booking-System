@@ -210,9 +210,23 @@ export class PrismaBookingRepository implements BookingRepository {
 
         // 3. Ensure these seats are not already attached to another active booking.
         const actualShowtimeSeatIds = showtimeSeats.map((s) => s.id);
+
+        // Opportunistically mark any stale pending bookings attached to these seats as EXPIRED
+        await tx.booking.updateMany({
+          where: {
+            status: "PENDING",
+            expiresAt: { lte: now },
+            bookingSeats: { some: { showtimeSeatId: { in: actualShowtimeSeatIds } } },
+          },
+          data: { status: "EXPIRED" },
+        });
+
         const conflictingBookings = await tx.booking.findMany({
           where: {
-            status: { in: ["PENDING", "CONFIRMED"] },
+            OR: [
+              { status: "CONFIRMED" },
+              { status: "PENDING", expiresAt: { gt: now } },
+            ],
             bookingSeats: { some: { showtimeSeatId: { in: actualShowtimeSeatIds } } },
           },
           include: bookingInclude,

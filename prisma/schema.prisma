@@ -187,6 +187,7 @@ model ShowtimeSeat {
   @@index([seatId])
   @@index([status])
   @@index([heldByUserId])
+  @@index([showtimeId, status, holdExpiresAt])
   @@map("showtime_seats")
 }
 
@@ -242,6 +243,7 @@ model Booking {
   @@index([userId])
   @@index([showtimeId])
   @@index([status])
+  @@index([status, expiresAt])
   @@map("bookings")
 }
 
