@@ -15,8 +15,9 @@ import type {
 } from "../business/interfaces/payment.interface.js";
 import type { EmailService } from "../business/interfaces/email.interface.js";
 import type { GoogleOAuthVerifier } from "../business/interfaces/auth.interface.js";
+import type { CacheService } from "../business/interfaces/cache.interface.js";
 
-// 2. Concrete Data Access Implementations
+// 2. Concrete Data Access & Infrastructure Implementations
 import { PrismaUserRepository } from "../data-access/repositories/user.repository.js";
 import { PrismaMovieRepository } from "../data-access/repositories/movie.repository.js";
 import { PrismaCinemaRepository } from "../data-access/repositories/cinema.repository.js";
@@ -29,6 +30,7 @@ import { BrevoEmailGateway } from "../data-access/gateways/email.gateway.js";
 import { GoogleOAuthGateway } from "../data-access/gateways/google-oauth.gateway.js";
 import { TmdbGateway } from "../data-access/gateways/tmdb.gateway.js";
 import { VnpayGateway } from "../data-access/gateways/vnpay.gateway.js";
+import { RedisCacheService } from "../infrastructure/cache/redis-cache.service.js";
 
 // 3. Application Services
 import { AuthService } from "../business/services/auth.service.js";
@@ -62,11 +64,12 @@ export interface ContainerOverrides {
   bookingRepository?: BookingRepository;
   paymentRepository?: PaymentRepository;
 
-  // Gateways
+  // Gateways & Infrastructure
   emailGateway?: EmailService;
   googleOAuthGateway?: GoogleOAuthVerifier;
   tmdbGateway?: ExternalMovieGateway;
   vnpayGateway?: PaymentGateway;
+  cacheService?: CacheService;
 
   // Services
   authService?: AuthService;
@@ -96,11 +99,12 @@ export class Container {
   readonly bookingRepository: BookingRepository;
   readonly paymentRepository: PaymentRepository;
 
-  // 2. Gateways
+  // 2. Gateways & Infrastructure
   readonly emailGateway: EmailService;
   readonly googleOAuthGateway: GoogleOAuthVerifier;
   readonly tmdbGateway: ExternalMovieGateway;
   readonly vnpayGateway: PaymentGateway;
+  readonly cacheService: CacheService;
 
   // 3. Application Services
   readonly authService: AuthService;
@@ -136,13 +140,14 @@ export class Container {
     this.bookingRepository = overrides.bookingRepository ?? new PrismaBookingRepository();
     this.paymentRepository = overrides.paymentRepository ?? new PrismaPaymentRepository();
 
-    // 2. Initialize Gateways
+    // 2. Initialize Gateways & Infrastructure
     this.emailGateway = overrides.emailGateway ?? new BrevoEmailGateway();
     this.googleOAuthGateway = overrides.googleOAuthGateway ?? new GoogleOAuthGateway();
     this.tmdbGateway = overrides.tmdbGateway ?? new TmdbGateway();
     this.vnpayGateway = overrides.vnpayGateway ?? new VnpayGateway();
+    this.cacheService = overrides.cacheService ?? new RedisCacheService();
 
-    // 3. Initialize Services (injecting repositories and gateways)
+    // 3. Initialize Services (injecting repositories, gateways, and cache)
     this.authService =
       overrides.authService ??
       new AuthService(this.userRepository, this.emailGateway, this.googleOAuthGateway);
@@ -154,10 +159,12 @@ export class Container {
         this.tmdbGateway,
         this.showtimeRepository,
         this.roomRepository,
+        this.cacheService,
       );
 
     this.cinemaService =
-      overrides.cinemaService ?? new CinemaService(this.cinemaRepository);
+      overrides.cinemaService ??
+      new CinemaService(this.cinemaRepository, this.cacheService);
 
     this.roomService =
       overrides.roomService ??
@@ -173,6 +180,7 @@ export class Container {
         this.showtimeRepository,
         this.movieRepository,
         this.roomRepository,
+        this.cacheService,
       );
 
     this.bookingService =

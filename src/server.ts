@@ -2,6 +2,7 @@ import "dotenv/config";
 import app from "./app.js";
 import { container } from "./config/container.js";
 import { prisma } from "./data-access/prisma/client.js";
+import { closeRedis } from "./infrastructure/cache/redis.client.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -15,8 +16,8 @@ const gracefulShutdown = (signal: string) => {
   container.bookingExpirationWorker.stop();
   server.close(async () => {
     try {
-      await prisma.$disconnect();
-      console.log("Database disconnected. Server closed cleanly.");
+      await Promise.allSettled([prisma.$disconnect(), closeRedis()]);
+      console.log("Database and Redis disconnected. Server closed cleanly.");
       process.exit(0);
     } catch (err) {
       console.error("Error during disconnect:", err);
@@ -25,7 +26,9 @@ const gracefulShutdown = (signal: string) => {
   });
 
   setTimeout(() => {
-    console.error("Could not close connections in time, forcefully shutting down");
+    console.error(
+      "Could not close connections in time, forcefully shutting down",
+    );
     process.exit(1);
   }, 10_000).unref();
 };

@@ -3,19 +3,64 @@ import type {
   CreateCinemaData,
   UpdateCinemaData,
 } from "../interfaces/cinema.interface.js";
+import type { CacheService } from "../interfaces/cache.interface.js";
 import { ConflictError } from "../../shared/errors/index.js";
 
 export class CinemaService {
   constructor(
     private readonly cinemaRepository: CinemaRepository,
+    private readonly cacheService?: CacheService,
   ) {}
 
+  private async invalidateCache(id?: string): Promise<void> {
+    if (!this.cacheService) return;
+    try {
+      await this.cacheService.del("cinemas:all");
+      if (id) {
+        await this.cacheService.del(`cinemas:${id}`);
+      }
+      await this.cacheService.delByPattern("cinemas:*");
+      // Changing cinema may affect showtimes listings
+      await this.cacheService.delByPattern("showtimes:*");
+    } catch (err) {
+      console.error("[CinemaService] ❌ Failed to invalidate cache:", err);
+    }
+  }
+
   async getAllCinemas() {
-    return this.cinemaRepository.findAll();
+    const cacheKey = "cinemas:all";
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<
+        Awaited<ReturnType<CinemaRepository["findAll"]>>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const cinemas = await this.cinemaRepository.findAll();
+    if (this.cacheService && cinemas) {
+      await this.cacheService.set(cacheKey, cinemas, 300); // 5 min TTL
+    }
+    return cinemas;
   }
 
   async getCinemaById(id: string) {
-    return this.cinemaRepository.findById(id);
+    const cacheKey = `cinemas:${id}`;
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<
+        Awaited<ReturnType<CinemaRepository["findById"]>>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const cinema = await this.cinemaRepository.findById(id);
+    if (this.cacheService && cinema) {
+      await this.cacheService.set(cacheKey, cinema, 300);
+    }
+    return cinema;
   }
 
   async createCinema(data: CreateCinemaData) {
@@ -25,7 +70,9 @@ export class CinemaService {
       city: data.city.trim(),
     };
 
-    return this.cinemaRepository.create(newCinema);
+    const created = await this.cinemaRepository.create(newCinema);
+    await this.invalidateCache();
+    return created;
   }
 
   async updateCinema(id: string, data: UpdateCinemaData) {
@@ -42,7 +89,9 @@ export class CinemaService {
       ...(data.city !== undefined ? { city: data.city.trim() } : {}),
     };
 
-    return this.cinemaRepository.update(id, updatedData);
+    const updated = await this.cinemaRepository.update(id, updatedData);
+    await this.invalidateCache(id);
+    return updated;
   }
 
   async deleteCinema(id: string) {
@@ -60,6 +109,8 @@ export class CinemaService {
       );
     }
 
-    return this.cinemaRepository.delete(id);
+    const deleted = await this.cinemaRepository.delete(id);
+    await this.invalidateCache(id);
+    return deleted;
   }
 }

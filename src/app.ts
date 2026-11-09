@@ -11,11 +11,10 @@ import showtimeRouter from "./api/routes/showtime.routes.js";
 import bookingRouter from "./api/routes/booking.routes.js";
 import paymentRouter from "./api/routes/payment.routes.js";
 
-import {
-  setupSwagger,
-} from "./config/swagger/index.js";
+import { setupSwagger } from "./config/swagger/index.js";
 import { notFoundHandler } from "./api/middlewares/not-found.middleware.js";
 import { errorHandler } from "./api/middlewares/error.middleware.js";
+import { globalLimiter } from "./api/middlewares/rate-limit.middleware.js";
 
 const app = express();
 
@@ -30,12 +29,16 @@ app.use(express.json());
 
 setupSwagger(app);
 
+// Health check endpoint (exempt from rate limiting)
 app.get("/health", (_request, response) => {
   return response.status(200).json({
     success: true,
     message: "Cinema Booking System API is running",
   });
 });
+
+// Apply global rate limiting across all API routes
+app.use(globalLimiter);
 
 app.use("/api/auth", authRouter);
 app.use("/api/movies", movieRouter);

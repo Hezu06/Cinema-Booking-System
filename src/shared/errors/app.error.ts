@@ -114,3 +114,18 @@ export class ServiceUnavailableError extends AppError {
     super(message, details);
   }
 }
+
+/**
+ * 429 Too Many Requests (Rate limit exceeded)
+ */
+export class TooManyRequestsError extends AppError {
+  readonly statusCode = 429;
+  readonly errorCode = "RATE_LIMIT_EXCEEDED";
+
+  constructor(
+    message: string = "Quá nhiều yêu cầu từ client. Vui lòng thử lại sau.",
+    details?: unknown,
+  ) {
+    super(message, details);
+  }
+}

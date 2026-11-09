@@ -7,60 +7,108 @@ import type {
   SyncMoviesOptions,
   SyncMoviesResult,
   SyncMovieDetail,
-} from '../interfaces/movie.interface.js'
-import type { ShowtimeRepository } from '../interfaces/showtime.interface.js'
-import type { RoomRepository } from '../interfaces/room.interface.js'
+} from "../interfaces/movie.interface.js";
+import type { ShowtimeRepository } from "../interfaces/showtime.interface.js";
+import type { RoomRepository } from "../interfaces/room.interface.js";
+import type { CacheService } from "../interfaces/cache.interface.js";
 
 export class MovieService {
   constructor(
     private readonly movieRepository: MovieRepository,
     private readonly externalMovieGateway?: ExternalMovieGateway,
     private readonly showtimeRepository?: ShowtimeRepository,
-    private readonly roomRepository?: RoomRepository
+    private readonly roomRepository?: RoomRepository,
+    private readonly cacheService?: CacheService,
   ) {}
 
+  private async invalidateCache(id?: string): Promise<void> {
+    if (!this.cacheService) return;
+    try {
+      await this.cacheService.del("movies:all");
+      if (id) {
+        await this.cacheService.del(`movies:${id}`);
+      }
+      await this.cacheService.delByPattern("movies:*");
+      await this.cacheService.delByPattern("showtimes:*");
+    } catch (err) {
+      console.error("[MovieService] ❌ Failed to invalidate cache:", err);
+    }
+  }
+
   async getAllMovies() {
-    return this.movieRepository.findAll()
+    const cacheKey = "movies:all";
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<
+        Awaited<ReturnType<MovieRepository["findAll"]>>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const movies = await this.movieRepository.findAll();
+    if (this.cacheService && movies) {
+      await this.cacheService.set(cacheKey, movies, 300); // 5 min TTL
+    }
+    return movies;
   }
 
   async getMovieById(id: string) {
-    return this.movieRepository.findById(id)
+    const cacheKey = `movies:${id}`;
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<
+        Awaited<ReturnType<MovieRepository["findById"]>>
+      >(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const movie = await this.movieRepository.findById(id);
+    if (this.cacheService && movie) {
+      await this.cacheService.set(cacheKey, movie, 300);
+    }
+    return movie;
   }
 
   async createMovie(data: CreateMovieData) {
-    const releaseDate = new Date(data.releaseDate)
-    const trimmedTitle = data.title.trim()
+    const releaseDate = new Date(data.releaseDate);
+    const trimmedTitle = data.title.trim();
 
     const existingMovie = await this.movieRepository.findByTitleAndReleaseDate(
       trimmedTitle,
-      releaseDate
-    )
+      releaseDate,
+    );
 
     if (existingMovie) {
-      throw new ConflictError(`Phim '${trimmedTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`)
+      throw new ConflictError(
+        `Phim '${trimmedTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`,
+      );
     }
 
     const newMovie: CreateMovieData = {
       ...data,
       title: trimmedTitle,
       releaseDate: releaseDate,
-    }
+    };
 
-    return this.movieRepository.create(newMovie)
+    const created = await this.movieRepository.create(newMovie);
+    await this.invalidateCache();
+    return created;
   }
 
   async updateMovie(id: string, data: UpdateMovieData) {
-    const currentMovie = await this.movieRepository.findById(id)
+    const currentMovie = await this.movieRepository.findById(id);
     if (!currentMovie) {
-      return null
+      return null;
     }
 
     const targetTitle =
-      data.title !== undefined ? data.title.trim() : currentMovie.title
+      data.title !== undefined ? data.title.trim() : currentMovie.title;
     const targetReleaseDate =
       data.releaseDate !== undefined
         ? new Date(data.releaseDate)
-        : currentMovie.releaseDate
+        : currentMovie.releaseDate;
 
     // Nếu tiêu đề hoặc ngày giờ phát hành thay đổi, kiểm tra xung đột với các phim khác
     if (
@@ -69,30 +117,42 @@ export class MovieService {
     ) {
       const conflictMovie = await this.movieRepository.findByTitleAndReleaseDate(
         targetTitle,
-        targetReleaseDate
-      )
+        targetReleaseDate,
+      );
 
       if (conflictMovie && conflictMovie.id !== id) {
-        throw new ConflictError(`Phim '${targetTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`)
+        throw new ConflictError(
+          `Phim '${targetTitle}' với ngày giờ phát hành này đã tồn tại trong hệ thống`,
+        );
       }
     }
 
     const updatedData: UpdateMovieData = {
       ...data,
       ...(data.title !== undefined ? { title: targetTitle } : {}),
-      ...(data.releaseDate !== undefined ? { releaseDate: targetReleaseDate } : {}),
-    }
+      ...(data.releaseDate !== undefined
+        ? { releaseDate: targetReleaseDate }
+        : {}),
+    };
 
-    return this.movieRepository.update(id, updatedData)
+    const updated = await this.movieRepository.update(id, updatedData);
+    await this.invalidateCache(id);
+    return updated;
   }
 
   async deleteMovie(id: string) {
-    return this.movieRepository.delete(id)
+    const deleted = await this.movieRepository.delete(id);
+    await this.invalidateCache(id);
+    return deleted;
   }
 
-  async syncExternalMovies(options?: SyncMoviesOptions): Promise<SyncMoviesResult> {
+  async syncExternalMovies(
+    options?: SyncMoviesOptions,
+  ): Promise<SyncMoviesResult> {
     if (!this.externalMovieGateway) {
-      throw new ServiceUnavailableError("Dịch vụ lấy phim ngoại vi (External Movie Gateway) chưa được cấu hình");
+      throw new ServiceUnavailableError(
+        "Dịch vụ lấy phim ngoại vi (External Movie Gateway) chưa được cấu hình",
+      );
     }
 
     const markEndedOlderThanDays = options?.markEndedOlderThanDays ?? 60;
@@ -149,7 +209,9 @@ export class MovieService {
 
     // 3. Tự động chuyển các phim quá cũ (quá số ngày quy định) sang trạng thái ENDED
     if (markEndedOlderThanDays > 0) {
-      const cutoffDate = new Date(Date.now() - markEndedOlderThanDays * 24 * 60 * 60 * 1000);
+      const cutoffDate = new Date(
+        Date.now() - markEndedOlderThanDays * 24 * 60 * 60 * 1000,
+      );
       const oldMovies = await this.movieRepository.findOldMovies(cutoffDate);
       for (const oldMovie of oldMovies) {
         await this.movieRepository.update(oldMovie.id, { status: "ENDED" });
@@ -161,6 +223,8 @@ export class MovieService {
     if (autoCreateShowtimes) {
       showtimesCreated = await this.autoScheduleUpcomingShowtimes();
     }
+
+    await this.invalidateCache();
 
     return {
       totalFetched: externalMovies.length,
@@ -213,13 +277,14 @@ export class MovieService {
             nowShowingMovies.length;
           const movie = nowShowingMovies[movieIndex]!;
 
-          const durationMs = (movie.durationMinutes + CLEANUP_MINUTES) * 60 * 1000;
+          const durationMs =
+            (movie.durationMinutes + CLEANUP_MINUTES) * 60 * 1000;
           const endTime = new Date(startTime.getTime() + durationMs);
 
           const overlap = await this.showtimeRepository.findOverlapping(
             room.id,
             startTime,
-            endTime
+            endTime,
           );
 
           if (!overlap) {
