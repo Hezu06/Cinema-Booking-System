@@ -4,6 +4,10 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireAdmin } from "../middlewares/role.middleware.js";
 import { validateRequest } from "../middlewares/validate.middleware.js";
 import {
+  seatHoldLimiter,
+  emailLimiter,
+} from "../middlewares/rate-limit.middleware.js";
+import {
   bookingIdParamSchema,
   bookingQuerySchema,
   cancelBookingSchema,
@@ -18,11 +22,28 @@ const bookingRouter = express.Router();
 bookingRouter.use(authMiddleware);
 
 // Customer & Admin endpoints
-bookingRouter.post("/hold", validateRequest({ body: holdSeatsSchema }), container.bookingController.holdSeats);
-bookingRouter.post("/release", validateRequest({ body: releaseSeatsSchema }), container.bookingController.releaseSeats);
-bookingRouter.post("/", validateRequest({ body: createBookingSchema }), container.bookingController.createBooking);
+bookingRouter.post(
+  "/hold",
+  seatHoldLimiter,
+  validateRequest({ body: holdSeatsSchema }),
+  container.bookingController.holdSeats,
+);
+bookingRouter.post(
+  "/release",
+  validateRequest({ body: releaseSeatsSchema }),
+  container.bookingController.releaseSeats,
+);
+bookingRouter.post(
+  "/",
+  validateRequest({ body: createBookingSchema }),
+  container.bookingController.createBooking,
+);
 bookingRouter.get("/my-bookings", container.bookingController.getMyBookings);
-bookingRouter.get("/:id", validateRequest({ params: bookingIdParamSchema }), container.bookingController.getBookingById);
+bookingRouter.get(
+  "/:id",
+  validateRequest({ params: bookingIdParamSchema }),
+  container.bookingController.getBookingById,
+);
 bookingRouter.post(
   "/:id/cancel",
   validateRequest({ params: bookingIdParamSchema, body: cancelBookingSchema }),
@@ -30,11 +51,17 @@ bookingRouter.post(
 );
 bookingRouter.post(
   "/:id/resend-email",
+  emailLimiter,
   validateRequest({ params: bookingIdParamSchema }),
   container.bookingController.resendBookingEmail,
 );
 
 // Admin-only: list all bookings across all users
-bookingRouter.get("/", requireAdmin, validateRequest({ query: bookingQuerySchema }), container.bookingController.getAllBookings);
+bookingRouter.get(
+  "/",
+  requireAdmin,
+  validateRequest({ query: bookingQuerySchema }),
+  container.bookingController.getAllBookings,
+);
 
 export default bookingRouter;
