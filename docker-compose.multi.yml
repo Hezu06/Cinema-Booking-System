@@ -1,0 +1,96 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: cbs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cinema_booking
+      MYSQL_USER: cbs
+      MYSQL_PASSWORD: cbs_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+    networks:
+      - cbs-network
+
+  app-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cbs-app-1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://cbs:cbs_password@mysql:3306/cinema_booking
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: cbs
+      DB_PASSWORD: cbs_password
+      DB_NAME: cinema_booking
+      PORT: 5000
+      JWT_SECRET: ${JWT_SECRET:-default_jwt_secret_for_multi_instance_testing_min_32_characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      GATEKEEPER_SECRET: cbs-local-gatekeeper-secret
+      REDIS_URL: ${REDIS_URL}
+    # Notice: NO ports exposed to host. Internal only to cbs-network.
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cbs-network
+
+  app-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cbs-app-2
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://cbs:cbs_password@mysql:3306/cinema_booking
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: cbs
+      DB_PASSWORD: cbs_password
+      DB_NAME: cinema_booking
+      PORT: 5000
+      JWT_SECRET: ${JWT_SECRET:-default_jwt_secret_for_multi_instance_testing_min_32_characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      GATEKEEPER_SECRET: cbs-local-gatekeeper-secret
+      REDIS_URL: ${REDIS_URL}
+    # Notice: NO ports exposed to host. Internal only to cbs-network.
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - cbs-network
+
+  nginx:
+    build:
+      context: ./docker/nginx-gatekeeper
+      dockerfile: Dockerfile
+    container_name: cbs-nginx-gatekeeper
+    restart: unless-stopped
+    ports:
+      # Only Nginx Gatekeeper is publicly exposed
+      - "8080:80"
+    depends_on:
+      - app-1
+      - app-2
+    networks:
+      - cbs-network
+
+volumes:
+  mysql_data:
+
+networks:
+  cbs-network:
+    driver: bridge

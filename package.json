@@ -23,7 +23,8 @@
     "test:google-circuit-breaker": "tsx scripts/test-google-circuit-breaker.ts",
     "movie:sync": "tsx scripts/sync-movies.ts",
     "test:all-circuit-breakers": "tsx scripts/test-all-circuit-breakers.ts",
-    "test:rate-limit-and-cache": "tsx scripts/test-rate-limit-and-cache.ts"
+    "test:rate-limit-and-cache": "tsx scripts/test-rate-limit-and-cache.ts",
+    "test:ingress": "tsx scripts/test-ingress-and-throttling.ts"
   },
   "repository": {
     "type": "git",

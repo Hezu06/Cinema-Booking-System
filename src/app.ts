@@ -14,9 +14,14 @@ import paymentRouter from "./api/routes/payment.routes.js";
 import { setupSwagger } from "./config/swagger/index.js";
 import { notFoundHandler } from "./api/middlewares/not-found.middleware.js";
 import { errorHandler } from "./api/middlewares/error.middleware.js";
+import { gatekeeperMiddleware } from "./api/middlewares/gatekeeper.middleware.js";
 import { globalLimiter } from "./api/middlewares/rate-limit.middleware.js";
+import { throttlingMiddleware } from "./api/middlewares/throttling.middleware.js";
 
 const app = express();
+
+// Enable proxy trust (trust 1st proxy hop from Render Ingress or Nginx Gatekeeper)
+app.set("trust proxy", 1);
 
 app.use(
   helmet({
@@ -29,7 +34,7 @@ app.use(express.json());
 
 setupSwagger(app);
 
-// Health check endpoint (exempt from rate limiting)
+// Health check endpoint (exempt from Gatekeeper secret, Rate Limiting, and Throttling)
 app.get("/health", (_request, response) => {
   return response.status(200).json({
     success: true,
@@ -37,8 +42,15 @@ app.get("/health", (_request, response) => {
   });
 });
 
-// Apply global rate limiting across all API routes
+// Master Ingress Pipeline:
+// L1 Ingress: Gatekeeper (Header sanitization, internal secret validation, IP normalization)
+app.use(gatekeeperMiddleware);
+
+// L2 Ingress: Tiered Rate Limiting (Hard drop 429 via Redis Store)
 app.use(globalLimiter);
+
+// L3 Ingress: Concurrency Throttling (Bounded queue, 503 backpressure, bypass for VNPAY callback)
+app.use(throttlingMiddleware);
 
 app.use("/api/auth", authRouter);
 app.use("/api/movies", movieRouter);
