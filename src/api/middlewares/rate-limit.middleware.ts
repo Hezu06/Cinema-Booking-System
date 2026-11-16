@@ -55,6 +55,7 @@ interface LimiterConfig {
   prefix: string;
   message: string;
   keyGenerator?: (req: Request) => string;
+  skip?: (req: Request) => boolean;
 }
 
 function buildRateLimiter(config: LimiterConfig) {
@@ -69,6 +70,7 @@ function buildRateLimiter(config: LimiterConfig) {
     message: config.message,
     ...(store ? { store } : {}),
     ...(config.keyGenerator ? { keyGenerator: config.keyGenerator } : {}),
+    ...(config.skip ? { skip: config.skip } : {}),
   });
 }
 
@@ -76,6 +78,7 @@ function buildRateLimiter(config: LimiterConfig) {
  * 1. Global API Rate Limiter
  * Applied to all endpoints to protect against volumetric DoS.
  * Limit: 300 requests per 15 minutes per IP.
+ * VNPAY Webhooks and Health checks are strictly exempted (VIP bypass).
  */
 export const globalLimiter = buildRateLimiter({
   windowMs: 15 * 60 * 1000,
@@ -83,6 +86,10 @@ export const globalLimiter = buildRateLimiter({
   prefix: "rl:global:",
   message:
     "Hệ thống ghi nhận quá nhiều yêu cầu từ địa chỉ IP này. Vui lòng thử lại sau 15 phút.",
+  skip: (req: Request) => {
+    const path = req.path.toLowerCase();
+    return path.startsWith("/api/payments/vnpay") || path.startsWith("/health");
+  },
 });
 
 /**
