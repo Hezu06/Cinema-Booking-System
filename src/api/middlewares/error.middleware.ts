@@ -59,12 +59,25 @@ export function errorHandler(
     });
   }
 
-  // 4. Malformed JSON Body
+  // 4. Malformed JSON Body & Payload Size Enforcement
   if (error instanceof SyntaxError && "status" in error && error.status === 400 && "body" in error) {
     return res.status(400).json({
       success: false,
       message: "Dữ liệu JSON trong body không hợp lệ",
       errorCode: "INVALID_JSON_BODY",
+    });
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    ("status" in error || "statusCode" in error) &&
+    ((error as any).status === 413 || (error as any).statusCode === 413)
+  ) {
+    return res.status(413).json({
+      success: false,
+      message: "Kích thước payload vượt quá giới hạn cho phép (tối đa 2MB)",
+      errorCode: "PAYLOAD_TOO_LARGE",
     });
   }
 
