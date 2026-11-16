@@ -214,19 +214,35 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
 }
 
 async function runBenchmarkSuite() {
+  const targetArg = process.argv.find((a) => a.startsWith("--target="))?.split("=")[1]?.trim();
+  const targetUrl = targetArg || process.env.BENCHMARK_TARGET_URL?.trim();
+  const isRemote = Boolean(targetUrl && targetUrl.startsWith("http"));
+
   console.log("==================================================================");
   console.log("📊 CBS PHASE 2: REAL-TIME LOAD BENCHMARK SUITE (KAGGLE RUNNER)");
-  console.log("   Hiếu - Ingress, Rate Limiting & Throttling Live Telemetry");
+  if (isRemote) {
+    console.log(`🌐 TARGET: LIVE CLOUD PRODUCTION SERVER -> ${targetUrl}`);
+  } else {
+    console.log("💻 TARGET: LOCAL EXPRESS INTEGRATION ENGINE");
+  }
   console.log("==================================================================");
 
-  const PORT = 3010;
-  console.log(`\n🚀 Initializing production Express app on port ${PORT}...`);
-  const server: Server = await new Promise((resolve) => {
-    const s = app.listen(PORT, () => resolve(s));
-  });
-  console.log("  ✓ Real Express app listening with full Ingress pipeline.");
+  let server: Server | null = null;
+  let baseUrl: string;
 
-  const baseUrl = `http://localhost:${PORT}`;
+  if (isRemote) {
+    baseUrl = targetUrl!.replace(/\/$/, "");
+    console.log(`\n🔗 Connecting directly to remote cloud instance at: ${baseUrl}`);
+  } else {
+    const PORT = 3010;
+    console.log(`\n🚀 Initializing production Express app on port ${PORT}...`);
+    server = await new Promise((resolve) => {
+      const s = app.listen(PORT, () => resolve(s));
+    });
+    console.log("  ✓ Real Express app listening with full Ingress pipeline.");
+    baseUrl = `http://localhost:${PORT}`;
+  }
+
   const allResults: BenchmarkMetrics[] = [];
   const TOTAL_EPOCHS = 5;
 
@@ -234,11 +250,13 @@ async function runBenchmarkSuite() {
     // ------------------------------------------------------------------
     // EPOCH 1: Normal Load (Baseline cache & DB read latency)
     // ------------------------------------------------------------------
-    throttlingMiddleware.updateOptions({
-      maxConcurrentRequests: 100,
-      maxQueueSize: 50,
-      queueTimeoutMs: 2000,
-    });
+    if (!isRemote) {
+      throttlingMiddleware.updateOptions({
+        maxConcurrentRequests: 100,
+        maxQueueSize: 50,
+        queueTimeoutMs: 2000,
+      });
+    }
 
     const s1 = await executeBenchmark({
       name: "Normal Daytime Load (10 Users lướt xem phim)",
@@ -246,7 +264,7 @@ async function runBenchmarkSuite() {
       totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
       concurrency: 10,
-      totalRequests: 100,
+      totalRequests: isRemote ? 40 : 100,
     });
     allResults.push(s1);
 
@@ -260,8 +278,8 @@ async function runBenchmarkSuite() {
       epochNum: 2,
       totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
-      concurrency: 30,
-      totalRequests: 300,
+      concurrency: isRemote ? 20 : 30,
+      totalRequests: isRemote ? 80 : 300,
     });
     allResults.push(s2);
 
@@ -270,19 +288,23 @@ async function runBenchmarkSuite() {
     // ------------------------------------------------------------------
     // EPOCH 3: Extreme Spike Overload (Testing L3 Backpressure & 503)
     // ------------------------------------------------------------------
-    throttlingMiddleware.updateOptions({
-      maxConcurrentRequests: 15,
-      maxQueueSize: 15,
-      queueTimeoutMs: 1000,
-    });
+    if (!isRemote) {
+      throttlingMiddleware.updateOptions({
+        maxConcurrentRequests: 15,
+        maxQueueSize: 15,
+        queueTimeoutMs: 1000,
+      });
+    }
 
     const s3 = await executeBenchmark({
-      name: "Flash Sale Spike Overload (80 Users F5 cùng lúc)",
+      name: isRemote
+        ? "Cloud Stress Burst (40 Concurrent Users)"
+        : "Flash Sale Spike Overload (80 Users F5 cùng lúc)",
       epochNum: 3,
       totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
-      concurrency: 80,
-      totalRequests: 240,
+      concurrency: isRemote ? 40 : 80,
+      totalRequests: isRemote ? 120 : 240,
     });
     allResults.push(s3);
 
@@ -294,8 +316,8 @@ async function runBenchmarkSuite() {
       epochNum: 4,
       totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/payments/vnpay/ipn`,
-      concurrency: 10,
-      totalRequests: 10,
+      concurrency: 5,
+      totalRequests: 5,
     });
     allResults.push(s4);
 
@@ -341,17 +363,21 @@ async function runBenchmarkSuite() {
 
     console.log("\n==================================================================\n");
   } finally {
-    throttlingMiddleware.updateOptions({
-      maxConcurrentRequests: 100,
-      maxQueueSize: 50,
-      queueTimeoutMs: 2000,
-    });
+    if (!isRemote) {
+      throttlingMiddleware.updateOptions({
+        maxConcurrentRequests: 100,
+        maxQueueSize: 50,
+        queueTimeoutMs: 2000,
+      });
+    }
 
-    console.log("🧹 Tearing down server and database connections...");
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    if (server) {
+      console.log("🧹 Tearing down local server and database connections...");
+      await new Promise<void>((resolve) => server!.close(() => resolve()));
+    }
     await closeRedis();
     await prisma.$disconnect();
-    console.log("✓ Server, Redis, and Prisma disconnected cleanly.");
+    console.log("✓ Teardown completed cleanly.");
   }
 }
 

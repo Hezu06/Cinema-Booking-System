@@ -25,7 +25,8 @@
     "test:all-circuit-breakers": "tsx scripts/test-all-circuit-breakers.ts",
     "test:rate-limit-and-cache": "tsx scripts/test-rate-limit-and-cache.ts",
     "test:ingress": "tsx scripts/test-ingress-and-throttling.ts",
-    "benchmark:load": "tsx scripts/benchmark-load-test.ts"
+    "benchmark:load": "tsx scripts/benchmark-load-test.ts",
+    "benchmark:live": "tsx scripts/benchmark-load-test.ts --target=https://cinema-booking-system-esvw.onrender.com"
   },
   "repository": {
     "type": "git",
