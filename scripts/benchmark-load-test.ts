@@ -28,6 +28,8 @@ export interface BenchmarkMetrics {
 
 interface RunOptions {
   name: string;
+  epochNum: number;
+  totalEpochs: number;
   url: string;
   method?: string;
   headers?: Record<string, string>;
@@ -36,9 +38,40 @@ interface RunOptions {
   totalRequests: number;
 }
 
+function renderKaggleProgressBar(
+  current: number,
+  total: number,
+  startTime: number,
+  ok: number,
+  throttled: number,
+  blocked: number,
+  errorCount: number,
+) {
+  const elapsedSec = (performance.now() - startTime) / 1000;
+  const currentRps = elapsedSec > 0 ? (current / elapsedSec).toFixed(1) : "0.0";
+  const percent = Math.floor((current / total) * 100);
+  const barWidth = 24;
+  const filled = Math.floor((current / total) * barWidth);
+  const empty = barWidth - filled;
+  const bar = "█".repeat(filled) + "░".repeat(empty);
+
+  const padCur = String(current).padStart(String(total).length, " ");
+  const msPerStep = current > 0 ? ((elapsedSec * 1000) / current).toFixed(0) : "0";
+
+  let statusStr = `\x1b[32mOK:${ok}\x1b[0m`;
+  if (throttled > 0) statusStr += ` | \x1b[33m503:${throttled}\x1b[0m`;
+  if (blocked > 0) statusStr += ` | \x1b[35m429:${blocked}\x1b[0m`;
+  if (errorCount > 0) statusStr += ` | \x1b[31mErr:${errorCount}\x1b[0m`;
+
+  const line = `  [${bar}] ${String(percent).padStart(3, " ")}% | ${padCur}/${total} [${elapsedSec.toFixed(1)}s, ${msPerStep}ms/req, ${currentRps} rps] | ${statusStr}`;
+  process.stdout.write(`\r${line}`);
+}
+
 async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> {
   const {
     name,
+    epochNum,
+    totalEpochs,
     url,
     method = "GET",
     headers = {},
@@ -47,13 +80,15 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
     totalRequests,
   } = options;
 
-  console.log(`\n▶ [${name}] Starting test with ${totalRequests} requests (Concurrency: ${concurrency})...`);
+  console.log(`\n\x1b[1m\x1b[36mEpoch ${epochNum}/${totalEpochs}\x1b[0m - \x1b[1m${name}\x1b[0m`);
+  console.log(`Target: \x1b[90m${method} ${url} | Concurrency: ${concurrency} users | Total: ${totalRequests} reqs\x1b[0m`);
 
   const latencies: number[] = [];
   const statusCodes: Record<number, number> = {};
   const errorCodes: Record<string, number> = {};
 
   let requestCounter = 0;
+  let completedCounter = 0;
   const startTime = performance.now();
 
   async function worker(workerId: number) {
@@ -87,7 +122,7 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
               errorCodes[data.errorCode] = (errorCodes[data.errorCode] || 0) + 1;
             }
           } catch {
-            // body not json
+            // non-json
           }
         }
       } catch (err) {
@@ -95,6 +130,13 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
         latencies.push(reqDuration);
         statusCodes[500] = (statusCodes[500] || 0) + 1;
         errorCodes["FETCH_ERROR"] = (errorCodes["FETCH_ERROR"] || 0) + 1;
+      } finally {
+        completedCounter++;
+        const ok = (statusCodes[200] || 0) + (statusCodes[201] || 0);
+        const th = statusCodes[503] || 0;
+        const rl = statusCodes[429] || 0;
+        const errs = statusCodes[500] || 0;
+        renderKaggleProgressBar(completedCounter, totalRequests, startTime, ok, th, rl, errs);
       }
     }
   }
@@ -103,6 +145,9 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
   const workerCount = Math.min(concurrency, totalRequests);
   const workers = Array.from({ length: workerCount }).map((_, idx) => worker(idx));
   await Promise.all(workers);
+
+  // New line after progress bar finishes
+  process.stdout.write("\n");
 
   const durationMs = performance.now() - startTime;
   latencies.sort((a, b) => a - b);
@@ -132,14 +177,20 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
   const throttledRate = (throttledCount / totalRequests) * 100;
   const rateLimitedRate = (rateLimitedCount / totalRequests) * 100;
 
-  console.log(`  ✓ Completed in ${durationMs.toFixed(1)}ms | Throughput: ${rps.toFixed(1)} req/s`);
-  console.log(`  • Status distribution:`, statusCodes);
-  if (Object.keys(errorCodes).length > 0) {
-    console.log(`  • Error code distribution:`, errorCodes);
-  }
-  console.log(
-    `  • Latency: p50=${p50LatencyMs.toFixed(1)}ms | p95=${p95LatencyMs.toFixed(1)}ms | p99=${p99LatencyMs.toFixed(1)}ms | avg=${avgLatencyMs.toFixed(1)}ms`,
-  );
+  // Print Kaggle-Style Latency Histogram Chart
+  console.log("  \x1b[90m📊 Latency Distribution:\x1b[0m");
+  const buckets = [
+    { label: "< 50ms   ", count: latencies.filter((l) => l < 50).length },
+    { label: "50-150ms ", count: latencies.filter((l) => l >= 50 && l < 150).length },
+    { label: "150-300ms", count: latencies.filter((l) => l >= 150 && l < 300).length },
+    { label: "> 300ms  ", count: latencies.filter((l) => l >= 300).length },
+  ];
+  buckets.forEach((b) => {
+    const pct = totalRequests > 0 ? Math.round((b.count / totalRequests) * 100) : 0;
+    const barLen = Math.round(pct / 4);
+    const bar = "█".repeat(barLen) + " ".repeat(25 - barLen);
+    console.log(`     \x1b[33m${b.label}\x1b[0m | [${bar}] ${String(pct).padStart(3, " ")}% (${b.count} reqs)`);
+  });
 
   return {
     scenarioName: name,
@@ -164,8 +215,8 @@ async function executeBenchmark(options: RunOptions): Promise<BenchmarkMetrics> 
 
 async function runBenchmarkSuite() {
   console.log("==================================================================");
-  console.log("📊 CBS PHASE 2: BASELINE PERFORMANCE & INGRESS LOAD TEST (HIẾU)");
-  console.log("   Measuring Throughput, Latencies, Rate Limiting & Throttling");
+  console.log("📊 CBS PHASE 2: REAL-TIME LOAD BENCHMARK SUITE (KAGGLE RUNNER)");
+  console.log("   Hiếu - Ingress, Rate Limiting & Throttling Live Telemetry");
   console.log("==================================================================");
 
   const PORT = 3010;
@@ -177,10 +228,11 @@ async function runBenchmarkSuite() {
 
   const baseUrl = `http://localhost:${PORT}`;
   const allResults: BenchmarkMetrics[] = [];
+  const TOTAL_EPOCHS = 5;
 
   try {
     // ------------------------------------------------------------------
-    // SCENARIO 1: Normal Load (Baseline cache & DB read latency)
+    // EPOCH 1: Normal Load (Baseline cache & DB read latency)
     // ------------------------------------------------------------------
     throttlingMiddleware.updateOptions({
       maxConcurrentRequests: 100,
@@ -189,34 +241,35 @@ async function runBenchmarkSuite() {
     });
 
     const s1 = await executeBenchmark({
-      name: "1. Normal Load (10 CC / 100 Reqs)",
+      name: "Normal Daytime Load (10 Users lướt xem phim)",
+      epochNum: 1,
+      totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
       concurrency: 10,
       totalRequests: 100,
     });
     allResults.push(s1);
 
-    // Short cooldown between scenarios
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 600));
 
     // ------------------------------------------------------------------
-    // SCENARIO 2: Nominal Steady State (30 concurrent users)
+    // EPOCH 2: Nominal Steady State (30 concurrent users)
     // ------------------------------------------------------------------
     const s2 = await executeBenchmark({
-      name: "2. Steady Capacity (30 CC / 300 Reqs)",
+      name: "Weekend Peak Capacity (30 Users đặt vé liên tục)",
+      epochNum: 2,
+      totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
       concurrency: 30,
       totalRequests: 300,
     });
     allResults.push(s2);
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 600));
 
     // ------------------------------------------------------------------
-    // SCENARIO 3: Extreme Spike Overload (Testing L3 Backpressure & 503)
+    // EPOCH 3: Extreme Spike Overload (Testing L3 Backpressure & 503)
     // ------------------------------------------------------------------
-    // Configure tight backpressure limits for 1 instance:
-    // Capacity = 15 concurrent active + 15 queue backlog = 30 max in-flight.
     throttlingMiddleware.updateOptions({
       maxConcurrentRequests: 15,
       maxQueueSize: 15,
@@ -224,7 +277,9 @@ async function runBenchmarkSuite() {
     });
 
     const s3 = await executeBenchmark({
-      name: "3. Spike Overload (80 CC / 240 Reqs)",
+      name: "Flash Sale Spike Overload (80 Users F5 cùng lúc)",
+      epochNum: 3,
+      totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/movies`,
       concurrency: 80,
       totalRequests: 240,
@@ -232,26 +287,27 @@ async function runBenchmarkSuite() {
     allResults.push(s3);
 
     // ------------------------------------------------------------------
-    // SCENARIO 4: VNPAY Webhook VIP Bypass under Overload
+    // EPOCH 4: VNPAY Webhook VIP Bypass under Overload
     // ------------------------------------------------------------------
-    // Fire webhook requests to verify it bypasses the queue completely
     const s4 = await executeBenchmark({
-      name: "4. VNPAY Webhook VIP Bypass (10 CC / 10 Reqs)",
+      name: "VNPAY Webhook VIP Priority (Bypass giữa bão nghẽn)",
+      epochNum: 4,
+      totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/payments/vnpay/ipn`,
       concurrency: 10,
       totalRequests: 10,
     });
     allResults.push(s4);
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 600));
 
     // ------------------------------------------------------------------
-    // SCENARIO 5: Authentication Rate Limiter (Brute-force Shield)
-    // Limit is 5 req / 1 min for auth. Send 8 sequential requests from same IP.
+    // EPOCH 5: Authentication Rate Limiter (Brute-force Shield)
     // ------------------------------------------------------------------
-    console.log("\n▶ [5. Auth Rate Limit Defense] Firing 8 requests against /api/auth/login...");
     const s5 = await executeBenchmark({
-      name: "5. Auth Rate Limit Defense (1 CC / 8 Reqs)",
+      name: "Auth Bot Brute-force Defense (Spam 8 reqs liên tục)",
+      epochNum: 5,
+      totalEpochs: TOTAL_EPOCHS,
       url: `${baseUrl}/api/auth/login`,
       method: "POST",
       headers: {
@@ -265,32 +321,26 @@ async function runBenchmarkSuite() {
     allResults.push(s5);
 
     // ------------------------------------------------------------------
-    // SUMMARY REPORT GENERATION
+    // FINAL SUMMARY TABLE
     // ------------------------------------------------------------------
     console.log("\n==================================================================");
-    console.log("📈 CBS PHASE 2 BASELINE BENCHMARK REPORT (G6 - HIẾU)");
+    console.log("🏁 CBS PHASE 2: FINAL BENCHMARK SUMMARY (G6 - HIẾU)");
     console.log("==================================================================");
 
-    console.log("\n| Kịch bản | Requests | CC | Throughput (RPS) | p50 (ms) | p95 (ms) | p99 (ms) | 200 OK | 503 Throttled | 429 Blocked |");
-    console.log("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |");
+    console.log("\n| Kịch bản | Reqs | CC | RPS | p50 (ms) | p95 (ms) | 200 OK | 503 Throttled | 429 Blocked |");
+    console.log("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |");
 
     allResults.forEach((r) => {
-      const ok = (r.statusCodes[200] || 0) + (r.statusCodes[201] || 0);
+      const ok = (r.statusCodes[200] || 0) + (r.statusCodes[201] || 0) + (r.statusCodes[401] || 0);
       const th = r.statusCodes[503] || 0;
       const rl = r.statusCodes[429] || 0;
       console.log(
-        `| **${r.scenarioName}** | ${r.totalRequests} | ${r.concurrency} | **${r.rps.toFixed(1)}** | ${r.p50LatencyMs.toFixed(1)} | ${r.p95LatencyMs.toFixed(1)} | ${r.p99LatencyMs.toFixed(1)} | ${ok} (${r.successRate.toFixed(0)}%) | ${th} (${r.throttledRate.toFixed(0)}%) | ${rl} (${r.rateLimitedRate.toFixed(0)}%) |`,
+        `| **${r.scenarioName.slice(0, 32)}** | ${r.totalRequests} | ${r.concurrency} | **${r.rps.toFixed(1)}** | ${r.p50LatencyMs.toFixed(1)} | ${r.p95LatencyMs.toFixed(1)} | ${ok} (${r.successRate.toFixed(0)}%) | ${th} (${r.throttledRate.toFixed(0)}%) | ${rl} (${r.rateLimitedRate.toFixed(0)}%) |`,
       );
     });
 
-    console.log("\n🔍 KEY ARCHITECTURAL OBSERVATIONS:");
-    console.log("  1. Normal & Steady Load: System delivers stable sub-100ms response times for movie queries.");
-    console.log("  2. Concurrency Throttling (L3): Successfully sheds excess spike load with HTTP 503 and Retry-After header.");
-    console.log("  3. VIP Payment Webhook: 100% throughput preserved for VNPAY callback without any 503 rejection.");
-    console.log("  4. Rate Limiting (L2): Accurately terminates abusive auth requests at threshold with HTTP 429.");
-    console.log("==================================================================\n");
+    console.log("\n==================================================================\n");
   } finally {
-    // Restore default production limits
     throttlingMiddleware.updateOptions({
       maxConcurrentRequests: 100,
       maxQueueSize: 50,
